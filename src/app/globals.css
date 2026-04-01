@@ -1,0 +1,129 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@theme {
+  /* --- Aether Design Tokens --- */
+  --radius-lg: 1.5rem;
+  /* 24px - Mature Rounding */
+  --radius-md: 1rem;
+  /* 16px */
+  --radius-sm: 0.75rem;
+  /* 12px */
+
+  /* --- Aether Color Palette (Indigo/Pearl Theme) --- */
+  --color-background: oklch(0.985 0.005 240);
+  /* Soothing Pearl Blue/Grey */
+  --color-foreground: oklch(0.145 0.02 240);
+
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.145 0.02 240);
+
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.145 0.02 240);
+
+  --color-primary: oklch(0.45 0.2 260);
+  /* Deep Indigo */
+  --color-primary-foreground: oklch(0.985 0 0);
+
+  --color-secondary: oklch(0.96 0.01 240);
+  --color-secondary-foreground: oklch(0.145 0.02 240);
+
+  --color-muted: oklch(0.96 0.01 240);
+  --color-muted-foreground: oklch(0.45 0.02 240);
+
+  --color-accent: oklch(0.92 0.02 260);
+  --color-accent-foreground: oklch(0.45 0.2 260);
+
+  --color-destructive: oklch(0.6 0.25 25);
+  --color-destructive-foreground: oklch(0.985 0 0);
+
+  --color-border: oklch(0.92 0.01 240);
+  --color-input: oklch(0.92 0.01 240);
+  --color-ring: oklch(0.45 0.2 260);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Custom layout utilities - Minimalist classes */
+.aether-card {
+  background-color: white;
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.aether-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom scrollbar for better reading experience */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.9 0 0);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.8 0 0);
+}
+
+/* --- Tiptap Editor & Prose Styling (Pure CSS Failsafes) --- */
+.prose ul, .prose ol {
+  padding-left: 2rem !important;
+  margin: 1.5rem 0 !important;
+}
+
+.prose ul {
+  list-style-type: disc !important;
+}
+
+.prose ol {
+  list-style-type: decimal !important;
+}
+
+.prose li {
+  margin-bottom: 0.5rem !important;
+  line-height: 1.8 !important;
+  color: inherit !important; /* Forces bullets to inherit text color */
+}
+
+.prose li::marker {
+  color: currentColor !important; /* The Magic: Makes markers/numbers match your text color */
+}
+
+.prose li p {
+  margin: 0 !important;
+  display: inline !important;
+}
+
+.prose blockquote {
+  border-left: 4px solid oklch(0.45 0.2 260 / 0.2) !important;
+  padding-left: 1.5rem !important;
+  margin: 2rem 0 !important;
+  font-style: italic !important;
+  color: oklch(0.45 0.02 240) !important;
+}
+
+.prose p {
+  margin: 1.25rem 0 !important;
+  line-height: 1.8 !important;
+}
