@@ -21,13 +21,13 @@ export default function Sidebar() {
 
   if (isMobile) {
     return (
-      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-100 flex items-center justify-around z-50 shadow-lg px-2">
+      <nav className="fixed border-t border-border/50 bottom-0 left-0 right-0 min-h-[calc(64px+env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-xl flex items-center justify-around z-50 shadow-[0_-1px_10px_rgba(0,0,0,0.05)] px-2 pb-[env(safe-area-inset-bottom)]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
-            <button key={item.name} onClick={() => confirmNavigation(item.href)} className={`flex flex-col items-center justify-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer border-none bg-transparent ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
-              <item.icon size={18} />
-              <span className="text-[10px] font-medium">{item.name}</span>
+            <button key={item.name} onClick={() => confirmNavigation(item.href)} className={`flex flex-col items-center justify-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer border-none bg-transparent ${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+              <item.icon size={20} />
+              <span className="text-[10px] font-bold tracking-tight uppercase">{item.name}</span>
             </button>
           );
         })}

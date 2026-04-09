@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { uploadImageToS3 } from '@/lib/upload';
 import { isDeepEqual } from '@/lib/utils';
-import { Save, Send, Image as ImageIcon, Loader2, PenSquare, Trash2, FileText, ChevronLeft, CheckCircle, Heart, Share2, BookOpen, Eye } from 'lucide-react';
+import { Save, Send, Image as ImageIcon, Loader2, PenSquare, Trash2, FileText, ChevronLeft, CheckCircle, Heart, Share2, BookOpen, Eye, Camera } from 'lucide-react';
 import { useNavigationGuard } from '@/context/NavigationGuardContext';
 
 export default function BlogRoute() {
@@ -266,11 +266,11 @@ export default function BlogRoute() {
       icon={null}
       onBack={handleBack}
       action={
-        <div className="flex items-center space-x-2 bg-secondary/30 p-1 rounded-xl border border-border/50">
+        <div className="flex items-center flex-wrap gap-2 bg-secondary/30 p-1 rounded-xl border border-border/50">
           {currentUser && !isAuthor && !isNew && (
-            <Button variant="ghost" size="sm" onClick={toggleFavorite} className="h-9 cursor-pointer px-3">
-              <Heart size={14} fill={isFavorited ? "currentColor" : "none"} className={`mr-2 ${isFavorited ? 'text-primary' : ''}`} />
-              Favorite
+            <Button variant="ghost" size="sm" onClick={toggleFavorite} className="h-auto py-1.5 sm:h-9 sm:py-0 cursor-pointer px-3 flex flex-col sm:flex-row items-center gap-1">
+              <Heart size={14} fill={isFavorited ? "currentColor" : "none"} className={isFavorited ? 'text-primary' : ''} />
+              <span className="text-[10px] sm:text-xs">Favorite</span>
             </Button>
           )}
 
@@ -279,28 +279,28 @@ export default function BlogRoute() {
               variant="ghost"
               size="sm"
               onClick={() => setIsPreview(!isPreview)}
-              className="h-9 cursor-pointer px-3 text-primary hover:bg-primary/5"
+              className="h-auto py-1.5 sm:h-9 sm:py-0 cursor-pointer px-3 text-primary hover:bg-primary/5 flex flex-col sm:flex-row items-center gap-1"
             >
               {isPreview ? (
-                <><PenSquare size={14} className="mr-2" /> Resume Editing</>
+                <><PenSquare size={14} /> <span className="text-[10px] sm:text-xs">Resume Editing</span></>
               ) : (
-                <><Eye size={14} className="mr-2" /> Reader Preview</>
+                <><Eye size={14} /> <span className="text-[10px] sm:text-xs">Reader Preview</span></>
               )}
             </Button>
           )}
 
           {isAuthor && (
-            <>
+            <div className="flex items-center flex-wrap gap-1">
               {!isNew && (
-                <Button variant="ghost" size="sm" onClick={() => setDeleteDialogOpen(true)} className="h-9 text-destructive hover:bg-destructive/5 hover:text-destructive cursor-pointer px-3">
-                  <Trash2 size={14} className="mr-2" />
-                  Delete
+                <Button variant="ghost" size="sm" onClick={() => setDeleteDialogOpen(true)} className="h-auto py-1.5 sm:h-9 sm:py-0 text-destructive hover:bg-destructive/5 hover:text-destructive cursor-pointer px-3 flex flex-col sm:flex-row items-center gap-1">
+                  <Trash2 size={14} />
+                  <span className="text-[10px] sm:text-xs">Delete</span>
                 </Button>
               )}
               {isEditMode && (
-                <Button variant="ghost" size="sm" onClick={() => handleSave('draft')} className="h-9 cursor-pointer px-3">
-                  <Save size={14} className="mr-2" />
-                  Save Draft
+                <Button variant="ghost" size="sm" onClick={() => handleSave('draft')} className="h-auto py-1.5 sm:h-9 sm:py-0 cursor-pointer px-3 flex flex-col sm:flex-row items-center gap-1">
+                  <Save size={14} />
+                  <span className="text-[10px] sm:text-xs">Save Draft</span>
                 </Button>
               )}
               <Button
@@ -314,12 +314,12 @@ export default function BlogRoute() {
                   }
                   triggerStatusChange(status === 'published' ? 'draft' : 'published');
                 }}
-                className={`h-9 cursor-pointer px-4 ${status === 'published' ? 'bg-amber-500 hover:bg-amber-600 border-none' : ''}`}
+                className={`h-auto py-1.5 sm:h-9 sm:py-0 cursor-pointer px-4 flex flex-col sm:flex-row items-center gap-1 ${status === 'published' ? 'bg-amber-500 hover:bg-amber-600 border-none' : ''}`}
               >
-                {status === 'published' ? <FileText size={14} className="mr-2 text-white" /> : <Send size={14} className="mr-2" />}
-                {status === 'published' ? 'Unpublish' : 'Publish'}
+                {status === 'published' ? <FileText size={14} className="text-white" /> : <Send size={14} />}
+                <span className="text-[10px] sm:text-xs">{status === 'published' ? 'Unpublish' : 'Publish'}</span>
               </Button>
-            </>
+            </div>
           )}
         </div>
       }
@@ -345,27 +345,22 @@ export default function BlogRoute() {
               />
 
               {isEditMode && (
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <label className="absolute inset-0 cursor-pointer">
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-20">
+                  <label className="p-2.5 bg-white text-primary rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-secondary/50 transition-all hover:scale-110 ring-1 ring-border/20">
+                    <Camera size={18} strokeWidth={2.5} />
                     <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                   </label>
-
-                  <div className="flex flex-col items-center">
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setPreviewImage(null);
-                      }}
-                      className="relative z-10 bg-white text-destructive px-4 py-2 rounded-xl font-black tracking-widest text-[10px] flex items-center space-x-2 shadow-2xl ring-1 ring-black/5 hover:bg-destructive/5 transition-all hover:scale-105 cursor-pointer"
-                    >
-                      <Trash2 size={14} />
-                      <span>Remove</span>
-                    </button>
-                    <span className="mt-2 text-[10px] text-white/80 font-medium bg-black/20 px-2 py-1 rounded-full backdrop-blur-sm">
-                      Recommended: 16:9 Widescreen
-                    </span>
-                  </div>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setPreviewImage(null);
+                    }}
+                    className="p-2.5 bg-white text-destructive rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-destructive/5 transition-all hover:scale-110 ring-1 ring-border/20"
+                    title="Remove cover"
+                  >
+                    <Trash2 size={18} />
+                  </button>
                 </div>
               )}
             </div>

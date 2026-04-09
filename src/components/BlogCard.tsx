@@ -91,7 +91,7 @@ export default function BlogCard({ blog, onDelete, hideStatusBadge, hideAuthorAc
             </AvatarFallback>
           </Avatar>
           <div className="space-y-0.5 min-w-0 flex-1">
-            <p className="text-[11px] font-black text-foreground tracking-tight leading-none pt-0.5 truncate group-hover:text-primary transition-colors">
+            <p className="text-sm font-black text-foreground tracking-tight leading-none pt-0.5 truncate group-hover:text-primary transition-colors">
               {blog.authorId?.penName || 'Anonymous'}
             </p>
             <p className="text-[10px] font-medium text-muted-foreground leading-none">

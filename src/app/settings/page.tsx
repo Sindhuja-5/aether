@@ -186,7 +186,7 @@ export default function SettingsPage() {
         </Button>
       }
     >
-      <div className="aether-card p-6 sm:p-8 md:p-10">
+      <div className="aether-card p-6 sm:p-8 md:p-10 w-full max-w-full overflow-hidden">
         <div className="space-y-8">
           {/* Profile Section */}
           <section className="space-y-9">
@@ -210,14 +210,14 @@ export default function SettingsPage() {
                       <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   )}
-                  <label className="absolute -bottom-2 -right-2 p-2.5 bg-white text-primary rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-secondary/50 transition-[background-color,transform,box-shadow] hover:scale-110 ring-1 ring-border/20">
+                  <label className="absolute -bottom-2 -right-2 p-2.5 bg-white text-primary rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-secondary/50 transition-all hover:scale-110 ring-1 ring-border/20 z-10">
                     <Camera size={18} strokeWidth={2.5} />
                     <input type="file" onChange={handleImageUpload} className="hidden" />
                   </label>
                   {formData.profilePicture && (
                     <button 
                       onClick={() => setFormData({ ...formData, profilePicture: '' })}
-                      className="absolute -top-2 -right-2 p-2 bg-white text-destructive rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-destructive/5 transition-all hover:scale-110 ring-1 ring-border/20"
+                      className="absolute -top-2 -right-2 p-2 bg-white text-destructive rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-destructive/5 transition-all hover:scale-110 ring-1 ring-border/20 z-10"
                       title="Remove image"
                     >
                       <Trash2 size={18} />
@@ -226,7 +226,7 @@ export default function SettingsPage() {
                 </Avatar>
               </div>
 
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-8 w-full transition-all">
+              <div className="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-8 w-full transition-all">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-muted-foreground px-1">Pen Name</label>
                   <input

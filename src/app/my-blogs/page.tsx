@@ -88,8 +88,8 @@ export default function MyBlogs() {
       }
     >
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center bg-secondary/50 p-1 rounded-xl border border-border/40">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center flex-wrap gap-1 bg-secondary/50 p-1 rounded-xl border border-border/40">
             <Button
               variant={statusFilter === 'all' ? 'secondary' : 'ghost'}
               size="sm" onClick={() => setStatusFilter('all')}
@@ -141,7 +141,7 @@ export default function MyBlogs() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-8">
           {filteredBlogs.map((blog: any) => (
             <BlogCard
               key={blog._id}

@@ -26,11 +26,15 @@ export default function LayoutClient({
     ? (isCollapsed ? 'md:ml-20' : 'md:ml-64') 
     : '';
 
-  const bottomPadding = isLoggedIn && isMobile ? 'pb-20' : 'pb-8';
+  const bottomPadding = isLoggedIn && isMobile 
+    ? 'pb-[calc(80px+env(safe-area-inset-bottom))]' 
+    : 'pb-8';
+
+  const maxWidthClass = isCollapsed ? 'max-w-7xl' : 'max-w-5xl';
 
   return (
-    <main className={`flex-1 min-h-[calc(100vh-64px)] pt-2 px-4 sm:px-6 lg:px-8 transition-all duration-300 ease-in-out ${leftSpacing} ${bottomPadding}`}>
-      <div className={(isLoggedIn && !isSettingsPage) ? 'max-w-5xl mx-auto' : 'max-w-6xl mx-auto'}>
+    <main className={`flex-1 min-h-[calc(100vh-64px)] pt-2 px-4 sm:px-6 lg:px-8 transition-all duration-300 ease-in-out overflow-x-hidden ${leftSpacing} ${bottomPadding}`}>
+      <div className={`${maxWidthClass} mx-auto w-full transition-all duration-300`}>
         {children}
       </div>
     </main>

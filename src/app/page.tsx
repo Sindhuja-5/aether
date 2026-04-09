@@ -85,7 +85,7 @@ function BlogFeed() {
   return (
     <>
       {!query && isLoggedIn && (
-        <div className="flex items-center space-x-1 bg-secondary/30 p-1 rounded-2xl border border-border/40 w-fit mb-6">
+        <div className="flex items-center flex-wrap gap-1 bg-secondary/30 p-1 rounded-2xl border border-border/40 w-fit mb-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -130,7 +130,7 @@ function BlogFeed() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-8">
           {blogs.map((blog: any) => (
             <BlogCard key={blog._id} blog={blog} hideStatusBadge={true} hideAuthorActions={true} />
           ))}

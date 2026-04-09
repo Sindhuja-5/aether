@@ -10,41 +10,51 @@
   --radius-sm: 0.75rem;
   /* 12px */
 
-  /* --- Aether Color Palette (Indigo/Pearl Theme) --- */
-  --color-background: oklch(0.985 0.005 240);
-  /* Soothing Pearl Blue/Grey */
-  --color-foreground: oklch(0.145 0.02 240);
+  /* --- Aether Color Palette (Precision Royal Blue) --- */
+  --color-background: oklch(0.99 0.005 250);
+  /* Very faint blue-white */
+  --color-foreground: oklch(0.15 0.02 250);
 
   --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.145 0.02 240);
+  --color-card-foreground: oklch(0.15 0.02 250);
 
   --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.145 0.02 240);
+  --color-popover-foreground: oklch(0.15 0.02 250);
 
-  --color-primary: oklch(0.45 0.2 260);
-  /* Deep Indigo */
-  --color-primary-foreground: oklch(0.985 0 0);
+  --color-primary: oklch(0.55 0.2 250);
+  /* Unified Royal Blue */
+  --color-primary-foreground: oklch(1 0 0);
 
-  --color-secondary: oklch(0.96 0.01 240);
-  --color-secondary-foreground: oklch(0.145 0.02 240);
+  --color-secondary: oklch(0.96 0.02 250);
+  /* Light Blue Surface */
+  --color-secondary-foreground: oklch(0.4 0.1 250);
 
-  --color-muted: oklch(0.96 0.01 240);
-  --color-muted-foreground: oklch(0.45 0.02 240);
+  --color-muted: oklch(0.96 0.02 250);
+  --color-muted-foreground: oklch(0.5 0.05 250);
 
-  --color-accent: oklch(0.92 0.02 260);
-  --color-accent-foreground: oklch(0.45 0.2 260);
+  --color-accent: oklch(0.92 0.04 250);
+  --color-accent-foreground: oklch(0.5 0.2 250);
 
   --color-destructive: oklch(0.6 0.25 25);
   --color-destructive-foreground: oklch(0.985 0 0);
 
-  --color-border: oklch(0.92 0.01 240);
-  --color-input: oklch(0.92 0.01 240);
-  --color-ring: oklch(0.45 0.2 260);
+  --color-border: oklch(0.92 0.02 250);
+  --color-input: oklch(0.92 0.02 250);
+  --color-ring: oklch(0.55 0.2 250);
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+    position: relative;
   }
 
   body {

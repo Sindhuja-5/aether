@@ -23,7 +23,7 @@ export default function PageContainer({
   onBack
 }: PageContainerProps) {
   return (
-    <div className={`max-w-${maxWidth} mx-auto pb-12 px-4 shadow-none md:shadow-none`}>
+    <div className="w-full pb-12 px-4 shadow-none md:shadow-none">
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6 pt-2">
         <div className="flex items-center space-x-1 min-w-0">
           {onBack && (
@@ -54,7 +54,7 @@ export default function PageContainer({
           </div>
         </div>
         {action && (
-          <div className="flex items-center space-x-3 shrink-0">
+          <div className="flex items-center flex-wrap gap-3 mt-2 sm:mt-0">
             {action}
           </div>
         )}
