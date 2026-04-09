@@ -29,8 +29,18 @@ export default function MyBlogs() {
 
   useEffect(() => {
     fetch('/api/blogs/me')
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          if (res.status === 401) {
+            window.location.href = '/';
+            return null;
+          }
+          throw new Error('Failed to fetch blogs');
+        }
+        return res.json();
+      })
       .then(data => {
+        if (!data) return;
         setBlogs(Array.isArray(data) ? data : []);
         setLoading(false);
       })

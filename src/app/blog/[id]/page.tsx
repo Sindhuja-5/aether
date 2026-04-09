@@ -50,6 +50,12 @@ export default function BlogRoute() {
       !isNew ? fetch(`/api/blogs/${id}`).then(r => r.json()).catch(() => null) : Promise.resolve(null),
       !isNew ? fetch('/api/favorites').then(r => r.ok ? r.json() : []).catch(() => []) : Promise.resolve([])
     ]).then(([userData, blogData, favData]) => {
+      if (userData?.error && isNew) {
+        toast.info('Please log in to create a story.');
+        window.location.href = '/';
+        return;
+      }
+
       setCurrentUser(userData && !userData.error ? userData : null);
 
       if (blogData && !blogData.error) {
@@ -65,7 +71,7 @@ export default function BlogRoute() {
         }
       } else if (!isNew && (!blogData || blogData.error)) {
         toast.error('Story not found.');
-        router.push('/');
+        window.location.href = '/';
       }
       setLoading(false);
     });
@@ -97,6 +103,21 @@ export default function BlogRoute() {
     if (!isEditMode) return;
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validation
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
+    const maxSizeBytes = 10 * 1024 * 1024; // 10MB for cover images
+
+    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.heic')) {
+      toast.error('Only JPEG, PNG and HEIC images are allowed');
+      return;
+    }
+
+    if (file.size > maxSizeBytes) {
+      toast.error('Image size must be less than 10MB');
+      return;
+    }
+
     setUploading(true);
     try {
       const url = await uploadImageToS3(file);
@@ -175,15 +196,14 @@ export default function BlogRoute() {
       title=""
       action={
         <div className="flex items-center space-x-2 bg-secondary/30 p-1 rounded-xl border border-border/50">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleBack} 
-            className={`h-9 text-muted-foreground cursor-pointer px-3 transition-all ${
-              (isAuthor || (currentUser && !isNew)) 
-                ? 'border-r border-border/40 rounded-none' 
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className={`h-9 text-muted-foreground cursor-pointer px-3 transition-all ${(isAuthor || (currentUser && !isNew))
+                ? 'border-r border-border/40 rounded-none'
                 : 'rounded-xl'
-            }`}
+              }`}
           >
             <ChevronLeft size={14} className="mr-2" />
             Back
@@ -234,47 +254,96 @@ export default function BlogRoute() {
         </div>
       )}
 
-      <div className="aether-card p-6 sm:p-8 md:p-10 overflow-hidden">
-        <div className={`flex flex-col lg:flex-row items-stretch gap-8 mb-8 pb-8 border-b border-border/50 ${isAuthor && status === 'published' ? 'opacity-90' : ''}`}>
-          <div className="flex-1 w-full flex flex-col justify-between space-y-6">
-            <div className="flex-1 flex flex-col justify-center">
-              {isEditMode ? (
-                <textarea
-                  placeholder="Enter Story Title..."
-                  className="w-full text-xl sm:text-2xl font-black text-foreground placeholder:text-muted-foreground/50 border border-border/40 bg-secondary/10 hover:bg-secondary/20 focus:bg-white focus:border-primary/30 rounded-xl px-5 py-4 focus:outline-none resize-none overflow-hidden leading-tight tracking-tight mt-1 transition-all"
-                  rows={1}
-                  value={title}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                    setHasChanges(true);
-                    e.target.style.height = 'auto';
-                    e.target.style.height = e.target.scrollHeight + 'px';
-                  }}
-                />
-              ) : (
-                <>
-                  <h1 className="w-full text-3xl md:text-5xl font-black text-foreground leading-tight tracking-tight">
-                    {title}
-                  </h1>
-                  {!isNew && blog?.authorId && (
-                    <div className="flex items-center space-x-3 mt-6">
-                      <Avatar className="h-10 w-10 border border-primary/10">
-                        <AvatarImage src={blog.authorId?.profilePicture || undefined} className="object-cover" />
-                        <AvatarFallback className="bg-primary text-white font-black text-xs uppercase">
-                          {blog.authorId?.penName?.[0] || 'A'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-black tracking-tight text-foreground">{blog.authorId?.penName}</p>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{format(new Date(blog.createdAt || Date.now()), 'MMMM d, yyyy')}</p>
-                      </div>
-                    </div>
-                  )}
-                </>
+      <div className="aether-card overflow-hidden">
+        {/* Hero Image Section */}
+        <div className="relative group">
+          {previewImage ? (
+            <div className={`relative w-full aspect-[21/9] sm:aspect-[16/7] min-h-[250px] max-h-[500px] overflow-hidden ${isEditMode ? 'cursor-pointer' : ''}`}>
+              <img
+                src={previewImage}
+                alt="Cover"
+                className={`w-full h-full object-cover transition-all duration-1000 ${isEditMode ? 'group-hover:scale-105' : ''}`}
+              />
+
+              {isEditMode && (
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <label className="absolute inset-0 cursor-pointer">
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  </label>
+
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setPreviewImage(null);
+                      setHasChanges(true);
+                    }}
+                    className="relative z-10 bg-white text-destructive px-5 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center space-x-2 shadow-2xl ring-1 ring-black/5 hover:bg-destructive/5 transition-all hover:scale-105 cursor-pointer"
+                  >
+                    <Trash2 size={16} />
+                    <span>Remove Cover</span>
+                  </button>
+                </div>
               )}
             </div>
+          ) : (
+            isEditMode && (
+              <label className="flex flex-col items-center justify-center w-full aspect-[21/9] sm:aspect-[16/7] min-h-[200px] border-b border-border/40 cursor-pointer hover:bg-primary/5 transition-all duration-300 group bg-secondary/10">
+                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                  <div className={`p-4 rounded-2xl mb-4 transition-colors ${uploading ? 'bg-muted' : 'bg-primary/5 group-hover:bg-primary/10 shadow-sm'}`}>
+                    {uploading ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-primary" />
+                    )}
+                  </div>
+                  <p className="text-[12px] font-black text-foreground uppercase tracking-widest">Story Cover Image</p>
+                </div>
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+            )
+          )}
+        </div>
 
-            <div className="w-full">
+        {/* Content Section */}
+        <div className="p-6 sm:p-10 md:p-14">
+          <div className={`mb-12 pb-12 border-b border-border/50 ${isAuthor && status === 'published' ? 'opacity-90' : ''}`}>
+            {isEditMode ? (
+              <textarea
+                placeholder="Enter Story Title..."
+                className="w-full text-2xl sm:text-4xl md:text-5xl font-black text-foreground placeholder:text-muted-foreground/30 border-none bg-transparent focus:outline-none resize-none overflow-hidden leading-tight tracking-tighter transition-all"
+                rows={1}
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setHasChanges(true);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
+              />
+            ) : (
+              <>
+                <h1 className="w-full text-3xl md:text-5xl lg:text-6xl font-black text-foreground leading-[1.1] tracking-tighter">
+                  {title}
+                </h1>
+                {!isNew && blog?.authorId && (
+                  <div className="flex items-center space-x-4 mt-10">
+                    <Avatar className="h-12 w-12 ring-2 ring-primary/10 border-2 border-white shadow-md">
+                      <AvatarImage src={blog.authorId?.profilePicture || undefined} className="object-cover" />
+                      <AvatarFallback className="bg-primary text-white font-black text-sm uppercase">
+                        {blog.authorId?.penName?.[0] || 'A'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-base font-black tracking-tight text-foreground">{blog.authorId?.penName}</p>
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">{format(new Date(blog.createdAt || Date.now()), 'MMMM d, yyyy')}</p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="mt-8">
               {isEditMode ? (
                 <TagPicker
                   selectedTags={tags}
@@ -283,13 +352,13 @@ export default function BlogRoute() {
                     setHasChanges(true);
                   }}
                   label=""
-                  placeholder="Select category..."
+                  placeholder="Categorize your story..."
                 />
               ) : (
                 (tags && tags.length > 0) && (
-                  <div className="flex flex-wrap gap-2 pt-2">
+                  <div className="flex flex-wrap gap-2.5">
                     {tags.map((tag: string) => (
-                      <span key={tag} className="text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 bg-secondary rounded-lg text-muted-foreground">
+                      <span key={tag} className="text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 bg-secondary/80 rounded-xl text-primary border border-primary/5">
                         {tag}
                       </span>
                     ))}
@@ -299,56 +368,19 @@ export default function BlogRoute() {
             </div>
           </div>
 
-          <div className="w-full lg:w-[280px] self-stretch">
-            {previewImage ? (
-              <div className={`relative ${isEditMode ? 'group cursor-pointer' : ''} aether-card h-full min-h-[160px] overflow-hidden`}>
-                <img src={previewImage} alt="Cover" className={`w-full h-full object-cover transition-all duration-700 ${isEditMode ? 'group-hover:scale-110' : ''}`} />
-                {isEditMode && (
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <div className="bg-white text-foreground px-3 py-1.5 rounded-lg font-bold text-xs flex items-center space-x-1 shadow-xl ring-1 ring-black/5">
-                      <ImageIcon size={14} />
-                      <span>Change</span>
-                    </div>
-                    <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                  </div>
-                )}
-              </div>
-            ) : (
-              isEditMode ? (
-                <label className="flex flex-col items-center justify-center w-full h-full min-h-[160px] border-2 border-dashed border-border/60 rounded-xl cursor-pointer hover:bg-primary/5 hover:border-primary/40 transition-all duration-300 group bg-secondary/20">
-                  <div className="flex flex-col items-center justify-center py-4 px-4 text-center">
-                    <div className={`p-2.5 rounded-xl mb-2 transition-colors ${uploading ? 'bg-muted' : 'bg-primary/5 group-hover:bg-primary/10'}`}>
-                      {uploading ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                      ) : (
-                        <ImageIcon className="w-4 h-4 text-primary" />
-                      )}
-                    </div>
-                    <p className="mb-0 text-[10px] font-black text-muted-foreground uppercase tracking-widest">Cover Image</p>
-                  </div>
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                </label>
-              ) : (
-                <div className="flex items-center justify-center w-full h-full min-h-[160px] rounded-xl bg-secondary/10 border border-border/40">
-                  <BookOpen className="w-8 h-8 text-muted-foreground/30" />
-                </div>
-              )
-            )}
+          <div className="prose-edit-zone">
+            <TiptapEditor
+              initialContent={body}
+              onChange={(newBody) => {
+                if (JSON.stringify(newBody) === JSON.stringify(body)) return;
+                setBody(newBody);
+                setHasChanges(true);
+              }}
+              onSave={() => isEditMode && handleSave(status)}
+              setEditor={setEditor}
+              readonly={!isEditMode}
+            />
           </div>
-        </div>
-
-        <div className="prose-edit-zone">
-          <TiptapEditor
-            initialContent={body}
-            onChange={(newBody) => {
-              if (JSON.stringify(newBody) === JSON.stringify(body)) return;
-              setBody(newBody);
-              setHasChanges(true);
-            }}
-            onSave={() => isEditMode && handleSave(status)}
-            setEditor={setEditor}
-            readonly={!isEditMode}
-          />
         </div>
       </div>
 

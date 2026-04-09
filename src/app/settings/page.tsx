@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { uploadImageToS3 } from '@/lib/upload';
 import TagPicker from '@/components/TagPicker';
 import PageContainer from '@/components/PageContainer';
-import { Settings, User as UserIcon, Palette, Loader2, Save, Camera } from 'lucide-react';
+import { Settings, User as UserIcon, Palette, Loader2, Save, Camera, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,8 +26,18 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetch('/api/user')
-      .then(res => res.json())
+      .then(async res => {
+        if (!res.ok) {
+          if (res.status === 401) {
+            window.location.href = '/';
+            return null;
+          }
+          throw new Error('Failed to fetch user');
+        }
+        return res.json();
+      })
       .then(data => {
+        if (!data) return; // Happens if we redirected on 401
         setUser(data);
         setFormData({
           penName: data.penName || '',
@@ -39,7 +49,9 @@ export default function SettingsPage() {
         });
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setLoading(false);
+      });
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,11 +61,26 @@ export default function SettingsPage() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validation
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/heic'];
+    const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.heic')) {
+      toast.error('Only JPEG, PNG and HEIC images are allowed');
+      return;
+    }
+
+    if (file.size > maxSizeBytes) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
     setUploading(true);
     try {
       const url = await uploadImageToS3(file);
       setFormData({ ...formData, profilePicture: url });
-      toast.success('Profile picture updated');
+      toast.success('Profile picture uploaded');
     } catch { toast.error('Upload failed'); }
     finally { setUploading(false); }
   };
@@ -114,10 +141,10 @@ export default function SettingsPage() {
             <div className="flex flex-col md:flex-row gap-12 items-start">
               <div className="relative group">
                 <Avatar className="h-32 w-32 rounded-[24px] ring-4 ring-white shadow-2xl border border-border/50 p-0.5 bg-white overflow-visible transition-transform duration-500 group-hover:scale-105">
-                    <AvatarImage
-                      src={formData.profilePicture || undefined}
-                      className={`rounded-[22px] object-cover transition-opacity duration-300 ${uploading ? 'opacity-30' : 'opacity-100'}`}
-                    />
+                  <AvatarImage
+                    src={formData.profilePicture || undefined}
+                    className={`rounded-[22px] object-cover transition-opacity duration-300 ${uploading ? 'opacity-30' : 'opacity-100'}`}
+                  />
                   <AvatarFallback className="bg-primary text-white font-black text-2xl rounded-[22px] uppercase">
                     {getInitials(formData.penName, formData.firstName, formData.lastName)}
                   </AvatarFallback>
@@ -130,6 +157,15 @@ export default function SettingsPage() {
                     <Camera size={20} strokeWidth={2.5} />
                     <input type="file" onChange={handleImageUpload} className="hidden" />
                   </label>
+                  {formData.profilePicture && (
+                    <button 
+                      onClick={() => setFormData({ ...formData, profilePicture: '' })}
+                      className="absolute -top-2 -right-2 p-2 bg-white text-destructive rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-destructive/5 transition-all hover:scale-110 ring-1 ring-border/20"
+                      title="Remove image"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </Avatar>
               </div>
 

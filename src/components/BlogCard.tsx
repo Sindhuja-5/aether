@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Heart, Loader2, Edit2, Trash2 } from 'lucide-react';
+import { Heart, Loader2, Edit2, Trash2, BookOpen } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -95,15 +95,23 @@ export default function BlogCard({ blog, onDelete, hideStatusBadge }: { blog: an
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1">
-            {blog.previewImage && (
-              <div className="aspect-[3/2] w-full overflow-hidden rounded-xl mb-6 bg-secondary/50 shadow-sm border border-border/50">
+            <div className="aspect-[3/2] w-full overflow-hidden rounded-xl mb-6 bg-secondary/50 shadow-sm border border-border/50 relative">
+              {blog.previewImage ? (
                 <img
                   src={blog.previewImage}
                   alt={blog.title}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-              </div>
-            )}
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-primary/10 via-background to-secondary/30 flex items-center justify-center relative overflow-hidden">
+                  {/* Modern geometric detail */}
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8" />
+                  <div className="absolute bottom-0 left-0 w-16 h-16 bg-primary/5 rounded-full -ml-4 -mb-4" />
+                  
+                  <BookOpen className="w-8 h-8 text-primary/20 transition-transform duration-500 group-hover:scale-110 group-hover:text-primary/30" strokeWidth={1.5} />
+                </div>
+              )}
+            </div>
 
             <div className="flex flex-wrap gap-2 mb-4">
               {(blog.tags && blog.tags.length > 0) && (
