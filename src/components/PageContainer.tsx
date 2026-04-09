@@ -1,5 +1,5 @@
 'use client';
-
+import React from 'react';
 import { useSidebar } from "@/context/SidebarContext";
 import { ChevronLeft } from 'lucide-react';
 
@@ -24,33 +24,31 @@ export default function PageContainer({
 }: PageContainerProps) {
   return (
     <div className={`max-w-${maxWidth} mx-auto pb-12 px-4 shadow-none md:shadow-none`}>
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8 pt-2">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6 pt-2">
         <div className="flex items-center space-x-1 min-w-0">
           {onBack && (
             <button 
               onClick={onBack}
-              className="p-2 -ml-2 hover:bg-secondary rounded-xl transition-colors text-muted-foreground hover:text-primary mr-2"
+              className="p-2 -ml-2 hover:bg-secondary rounded-xl transition-colors text-muted-foreground hover:text-primary mr-2 cursor-pointer"
               title="Go back"
             >
-              <ChevronLeft size={22} />
+              <ChevronLeft size={18} />
             </button>
           )}
           <div className="flex items-center space-x-4 min-w-0">
             {icon && (
-              <div className="p-3 bg-primary/5 text-primary rounded-2xl shrink-0 border border-primary/10 shadow-sm">
-                {icon}
+              <div className="p-3 bg-primary/5 text-primary rounded-2xl shrink-0 border border-primary/10 shadow-sm flex items-center justify-center">
+                {React.cloneElement(icon as React.ReactElement<any>, { size: 18 })}
               </div>
             )}
             <div className="flex flex-col min-w-0">
-              {title && (
-                <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight leading-none whitespace-nowrap">
-                  {title}
-                </h1>
-              )}
+              <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight truncate leading-tight">
+                {title}
+              </h1>
               {subtitle && (
-                <div className="text-xs font-bold text-muted-foreground pt-1.5 opacity-70">
+                <p className="text-sm text-muted-foreground font-medium truncate mt-0.5">
                   {subtitle}
-                </div>
+                </p>
               )}
             </div>
           </div>

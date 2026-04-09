@@ -87,7 +87,7 @@ export default function MyBlogs() {
         </Button>
       }
     >
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-10 pb-4 border-b border-border/40">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-secondary/50 p-1 rounded-xl border border-border/40">
             <Button
@@ -107,7 +107,7 @@ export default function MyBlogs() {
             >Published</Button>
           </div>
           <div className="h-4 w-[1px] bg-border mx-2 hidden sm:block" />
-          <div className="flex items-center text-muted-foreground text-[10px] font-black uppercase tracking-widest px-2 group">
+          <div className="flex items-center text-muted-foreground text-[10px] font-black tracking-widest px-2 group">
             <ListFilter size={14} className="mr-2 group-hover:text-primary transition-colors" />
             <span>{filteredBlogs.length} Stories</span>
           </div>
@@ -130,7 +130,7 @@ export default function MyBlogs() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24">
           <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground font-black uppercase tracking-widest text-[10px]">Accessing Library...</p>
+          <p className="text-muted-foreground font-black tracking-widest text-[10px]">Loading your story archive...</p>
         </div>
       ) : filteredBlogs.length === 0 ? (
         <div className="text-center py-32 bg-secondary/10 rounded-[32px] border-2 border-dashed border-border/40">

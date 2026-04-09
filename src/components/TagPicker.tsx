@@ -55,8 +55,8 @@ export default function TagPicker({
     <div className="w-full space-y-3" ref={containerRef}>
       {label && (
         <div className="flex items-center space-x-2 text-gray-400 px-1">
-          <Tag size={16} />
-          <span className="text-[10px] font-black uppercase tracking-widest leading-none">{label}</span>
+          <Tag size={18} />
+          <span className="text-xs font-bold leading-none">{label}</span>
         </div>
       )}
 
@@ -95,7 +95,7 @@ export default function TagPicker({
         />
 
         <div className="flex items-center px-3 text-gray-400">
-           <ChevronDown size={20} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+           <ChevronDown size={18} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </div>
 

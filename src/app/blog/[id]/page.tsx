@@ -33,7 +33,7 @@ export default function BlogRoute() {
 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const initialData = useRef<any>(null);
+  const [initialState, setInitialState] = useState<any>(null);
   const [editor, setEditor] = useState<any>(null);
 
   const [backDialogOpen, setBackDialogOpen] = useState(false);
@@ -69,12 +69,12 @@ export default function BlogRoute() {
         setStatus(blogData.status);
         setTags(blogData.tags || []);
 
-        initialData.current = {
+        setInitialState({
           title: blogData.title || '',
           body: blogData.body,
           previewImage: blogData.previewImage || null,
           tags: blogData.tags || []
-        };
+        });
 
         if (Array.isArray(favData) && favData.some((f: any) => (f.blogId?._id === id || f.blogId === id))) {
           setIsFavorited(true);
@@ -85,12 +85,12 @@ export default function BlogRoute() {
         setBody(emptyDoc);
         setTags([]);
         setPreviewImage(null);
-        initialData.current = {
+        setInitialState({
           title: '',
           body: emptyDoc,
           previewImage: null,
           tags: []
-        };
+        });
       } else if (!isNew && (!blogData || blogData.error)) {
         toast.error('Story not found.');
         window.location.href = '/';
@@ -100,10 +100,10 @@ export default function BlogRoute() {
   }, [id, isNew, router]);
 
   const hasChanges = useMemo(() => {
-    if (!initialData.current) return false;
+    if (!initialState) return false;
     const currentData = { title, body, previewImage, tags };
-    return !isDeepEqual(initialData.current, currentData);
-  }, [title, body, previewImage, tags]);
+    return !isDeepEqual(initialState, currentData);
+  }, [initialState, title, body, previewImage, tags]);
 
   // Sync with global navigation guard
   useEffect(() => {
@@ -163,14 +163,14 @@ export default function BlogRoute() {
 
   const handleSave = async (saveStatus: 'draft' | 'published') => {
     if (!title.trim()) { toast.warning('A story needs a title.'); return; }
-    
+
     // Quality Checks for Publishing
     if (saveStatus === 'published') {
       if (!tags || tags.length === 0) {
         toast.warning('Please select at least one topic to help others discover your story.');
         return;
       }
-      
+
       const editorText = editor?.getText().trim() || "";
       if (editorText.length < 20) {
         toast.warning('Your story is a bit short! Add some more depth before publishing.');
@@ -190,12 +190,16 @@ export default function BlogRoute() {
         const savedBlog = await res.json();
         toast.success(saveStatus === 'published' ? 'Story published!' : 'Draft saved.');
         setStatus(savedBlog.status);
-        initialData.current = {
-          title: savedBlog.title || '',
-          body: savedBlog.body,
-          previewImage: savedBlog.previewImage || null,
-          tags: savedBlog.tags || []
-        };
+
+        // Update baseline to the current state to clear "dirty" flag
+        setInitialState(JSON.parse(JSON.stringify({
+          title,
+          body: content,
+          previewImage,
+          tags
+        })));
+        setDirty(false);
+
         if (isNew) router.push(`/blog/${savedBlog._id}`);
       } else { toast.error('Failed to save story'); }
     } catch { toast.error('An error occurred'); }
@@ -237,18 +241,20 @@ export default function BlogRoute() {
   };
 
   if (loading) return (
-    <PageContainer title={isNew ? 'New Story' : 'Story'} icon={<BookOpen size={20} />}>
+    <PageContainer title="" icon={null}>
       <div className="flex flex-col items-center justify-center py-32">
         <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
       </div>
     </PageContainer>
   );
 
+  const isPublishable = Boolean(title && String(title).trim() !== '' && body && String(body).trim() !== '');
+  const hasValidTags = tags && tags.length > 0;
+
   return (
     <PageContainer
-      title={isNew ? 'New Story' : title || 'Edit Story'}
-      subtitle={isEditMode ? "Workspace" : "Viewer"}
-      icon={isEditMode ? <PenSquare size={20} /> : <BookOpen size={20} />}
+      title=""
+      icon={null}
       onBack={handleBack}
       action={
         <div className="flex items-center space-x-2 bg-secondary/30 p-1 rounded-xl border border-border/50">
@@ -268,7 +274,7 @@ export default function BlogRoute() {
                 </Button>
               )}
               {isEditMode && (
-                <Button variant="ghost" size="sm" onClick={() => handleSave('draft')} disabled={saving} className="h-9 cursor-pointer px-3">
+                <Button variant="ghost" size="sm" onClick={() => handleSave('draft')} className="h-9 cursor-pointer px-3">
                   <Save size={14} className="mr-2" />
                   Save Draft
                 </Button>
@@ -276,8 +282,14 @@ export default function BlogRoute() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => triggerStatusChange(status === 'published' ? 'draft' : 'published')}
-                disabled={saving || (isEditMode && !hasChanges && !isNew)}
+                onClick={() => {
+                  if (status !== 'published') {
+                    if (!title || !String(title).trim()) return toast.warning("Your story needs a Title.");
+                    if (!body || !String(body).trim()) return toast.warning("Your story needs some Content.");
+                    if (!hasValidTags) return toast.warning("Please select at least one Topic.");
+                  }
+                  triggerStatusChange(status === 'published' ? 'draft' : 'published');
+                }}
                 className={`h-9 cursor-pointer px-4 ${status === 'published' ? 'bg-amber-500 hover:bg-amber-600 border-none' : ''}`}
               >
                 {status === 'published' ? <FileText size={14} className="mr-2 text-white" /> : <Send size={14} className="mr-2" />}
@@ -320,7 +332,7 @@ export default function BlogRoute() {
                       e.stopPropagation();
                       setPreviewImage(null);
                     }}
-                    className="relative z-10 bg-white text-destructive px-4 py-2 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center space-x-2 shadow-2xl ring-1 ring-black/5 hover:bg-destructive/5 transition-all hover:scale-105 cursor-pointer"
+                    className="relative z-10 bg-white text-destructive px-4 py-2 rounded-xl font-black tracking-widest text-[10px] flex items-center space-x-2 shadow-2xl ring-1 ring-black/5 hover:bg-destructive/5 transition-all hover:scale-105 cursor-pointer"
                   >
                     <Trash2 size={14} />
                     <span>Remove</span>
@@ -339,7 +351,7 @@ export default function BlogRoute() {
                       <ImageIcon className="w-5 h-5 text-primary" />
                     )}
                   </div>
-                  <p className="text-[10px] font-black text-foreground uppercase tracking-widest">Story Cover Image</p>
+                  <p className="text-[10px] font-black text-foreground tracking-widest">Story Cover Image</p>
                 </div>
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               </label>
@@ -369,15 +381,15 @@ export default function BlogRoute() {
                 </h1>
                 {!isNew && blog?.authorId && (
                   <div className="flex items-center space-x-3 mt-6">
-                    <Avatar className="h-10 w-10 ring-2 ring-primary/5 border border-white shadow-sm">
-                      <AvatarImage src={blog.authorId?.profilePicture || undefined} className="object-cover" />
-                      <AvatarFallback className="bg-primary text-white font-black text-xs uppercase">
+                    <Avatar className="h-10 w-10 ring-2 ring-primary/5 border border-white shadow-sm rounded-full">
+                      <AvatarImage src={blog.authorId?.profilePicture || undefined} className="object-cover rounded-full" />
+                      <AvatarFallback className="bg-primary text-white font-black text-xs uppercase rounded-full">
                         {blog.authorId?.penName?.[0] || 'A'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="text-sm font-bold tracking-tight text-foreground">{blog.authorId?.penName}</p>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">{format(new Date(blog.createdAt || Date.now()), 'MMM d, yyyy')}</p>
+                      <p className="text-[10px] font-bold text-muted-foreground tracking-widest opacity-60">{format(new Date(blog.createdAt || Date.now()), 'MMM d, yyyy')}</p>
                     </div>
                   </div>
                 )}
@@ -398,7 +410,7 @@ export default function BlogRoute() {
                 (tags && tags.length > 0) && (
                   <div className="flex flex-wrap gap-2.5">
                     {tags.map((tag: string) => (
-                      <span key={tag} className="text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2 bg-secondary/80 rounded-xl text-primary border border-primary/5">
+                      <span key={tag} className="text-[10px] font-black tracking-[0.2em] px-4 py-2 bg-secondary/80 rounded-xl text-primary border border-primary/5">
                         {tag}
                       </span>
                     ))}

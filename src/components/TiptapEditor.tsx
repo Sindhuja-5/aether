@@ -62,10 +62,10 @@ const MenuBar = ({ editor }: { editor: any }) => {
       {/* Font Size Dropdown */}
       <div className="flex items-center space-x-1 px-2 border-r border-border/40 mr-1">
         <Type size={14} className="text-muted-foreground mr-1" />
-        <select 
+        <select
           onChange={(e) => (editor.commands as any).setFontSize(e.target.value)}
           value={editor.getAttributes('textStyle').fontSize || '16px'}
-          className="bg-transparent text-[11px] font-black uppercase tracking-widest outline-none cursor-pointer hover:text-primary transition-colors py-1 pr-1"
+          className="bg-transparent text-[11px] font-black tracking-widest outline-none cursor-pointer hover:text-primary transition-colors py-1 pr-1"
         >
           {FONT_SIZES.map(size => (
             <option key={size} value={size}>{size}</option>
@@ -73,20 +73,20 @@ const MenuBar = ({ editor }: { editor: any }) => {
         </select>
       </div>
 
-      <button 
-        onClick={() => editor.chain().focus().toggleBold().run()} 
+      <button
+        onClick={() => editor.chain().focus().toggleBold().run()}
         className={`p-2 rounded-lg transition-all hover:bg-gray-200 ${editor.isActive('bold') ? 'bg-primary text-white hover:bg-primary/90' : 'text-muted-foreground'}`}
       >
         <Bold size={16} strokeWidth={2.5} />
       </button>
-      <button 
-        onClick={() => editor.chain().focus().toggleItalic().run()} 
+      <button
+        onClick={() => editor.chain().focus().toggleItalic().run()}
         className={`p-2 rounded-lg transition-all hover:bg-gray-200 ${editor.isActive('italic') ? 'bg-primary text-white hover:bg-primary/90' : 'text-muted-foreground'}`}
       >
         <Italic size={16} strokeWidth={2.5} />
       </button>
-      <button 
-        onClick={() => editor.chain().focus().toggleUnderline().run()} 
+      <button
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
         className={`p-2 rounded-lg transition-all hover:bg-gray-200 ${editor.isActive('underline') ? 'bg-primary text-white hover:bg-primary/90' : 'text-muted-foreground'}`}
       >
         <UnderlineIcon size={16} strokeWidth={2.5} />
@@ -97,8 +97,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
       {/* Color Picker */}
       <div className="flex items-center space-x-2 p-1.5 hover:bg-gray-200 rounded-lg group transition-all">
         <Palette size={16} className="text-muted-foreground group-hover:text-primary" />
-        <input 
-          type="color" 
+        <input
+          type="color"
           onChange={(e: any) => {
             const color = e.target.value;
             editor.chain().focus().setColor(color).run();

@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get('status') || 'published';
     const query = searchParams.get('q') || '';
+    const exclusive = searchParams.get('exclusive') === 'true';
 
     // Search Logic
     let searchFilter: any = { status };
@@ -31,8 +32,8 @@ export async function GET(req: NextRequest) {
       // without MongoDB Atlas Search. Here we search the title/tags/author.
     }
 
-    // 1. Get current user's session for interest sorting (only if no active search)
-    if (!query) {
+    // 1. Exclusive Interest-based Feed (For You)
+    if (!query && exclusive) {
       const session = await auth0.getSession();
       if (session?.user && status === 'published') {
         const user = await User.findOne({ auth0Id: session.user.sub });
@@ -45,21 +46,18 @@ export async function GET(req: NextRequest) {
           })
           .populate({ path: 'authorId', select: 'penName profilePicture', model: User })
           .sort({ createdAt: -1 });
-
-          const interestIds = interestBlogs.map(b => b._id);
-          const otherBlogs = await Blog.find({ 
-            status: 'published',
-            _id: { $nin: interestIds }
-          })
-          .populate({ path: 'authorId', select: 'penName profilePicture', model: User })
-          .sort({ createdAt: -1 });
           
-          return NextResponse.json([...interestBlogs, ...otherBlogs]);
+          return NextResponse.json(interestBlogs);
+        } else {
+          // If user has no interests, For You is empty
+          return NextResponse.json([]);
         }
       }
+      // If not logged in, For You is empty
+      return NextResponse.json([]);
     }
 
-    // Regular Search or Chronological Sort
+    // 2. Global Feed or Search (Discover)
     const blogs = await Blog.find(searchFilter)
       .populate({ path: 'authorId', select: 'penName profilePicture', model: User })
       .sort({ createdAt: -1 });

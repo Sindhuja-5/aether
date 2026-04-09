@@ -45,7 +45,7 @@ export default function Navbar({ user: initialUser }: { user: any }) {
       }
     };
     fetchUser(false);
-    
+
     const handleUpdate = () => fetchUser(true);
     window.addEventListener('user-updated', handleUpdate);
     return () => window.removeEventListener('user-updated', handleUpdate);
@@ -68,9 +68,8 @@ export default function Navbar({ user: initialUser }: { user: any }) {
   };
 
   return (
-    <header className={`sticky top-0 z-[100] w-full transition-all duration-300 ${
-      scrolled ? 'bg-background/80 backdrop-blur-xl py-3 border-b border-border shadow-sm' : 'bg-transparent py-5'
-    }`}>
+    <header className={`sticky top-0 z-[100] w-full transition-all duration-300 ${scrolled ? 'bg-background/80 backdrop-blur-xl py-3 border-b border-border shadow-sm' : 'bg-transparent py-5'
+      }`}>
       <div className="max-w-[1400px] mx-auto px-6 flex items-center justify-between">
         {/* Brand Logo */}
         <button onClick={() => confirmNavigation('/')} className="flex items-center space-x-2 group shrink-0 border-none bg-transparent cursor-pointer">
@@ -84,17 +83,17 @@ export default function Navbar({ user: initialUser }: { user: any }) {
 
         {/* Search */}
         <div className="flex-1 max-w-xl px-12 hidden sm:block">
-           <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
-              <input 
-                type="text" 
-                placeholder="Search ideas, topics, or authors..." 
-                value={searchValue}
-                onChange={(e) => handleSearch(e.target.value)}
-                onKeyDown={onKeyDown}
-                className="w-full bg-secondary/50 border border-border/50 h-11 pl-11 pr-4 rounded-xl font-bold text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all"
-              />
-           </div>
+          <div className="relative group">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <input
+              type="text"
+              placeholder="Search ideas, topics, or authors..."
+              value={searchValue}
+              onChange={(e) => handleSearch(e.target.value)}
+              onKeyDown={onKeyDown}
+              className="w-full bg-secondary/50 border border-border/50 h-11 pl-11 pr-4 rounded-xl font-bold text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all"
+            />
+          </div>
         </div>
 
         {/* Actions */}
@@ -113,8 +112,8 @@ export default function Navbar({ user: initialUser }: { user: any }) {
 
               <Button asChild variant="ghost" className="h-9 px-4 text-destructive hover:bg-destructive/5 hover:text-destructive font-bold transition-all cursor-pointer rounded-xl">
                 <a href="/auth/logout" className="flex items-center">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <LogOut className="mr-2" size={18} />
+                  <span>Logout</span>
                 </a>
               </Button>
             </div>

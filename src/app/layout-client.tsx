@@ -2,6 +2,7 @@
 
 import { useSidebar } from "@/context/SidebarContext";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LayoutClient({ 
   children, 
@@ -13,6 +14,11 @@ export default function LayoutClient({
   const { isCollapsed, isMobile } = useSidebar();
   const pathname = usePathname();
   
+  // Global scroll restoration fix - ensure we always start at top on navigation
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   // Special handling for settings page to match other pages' max-width
   const isSettingsPage = pathname === '/settings';
 

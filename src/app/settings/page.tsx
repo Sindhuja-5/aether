@@ -23,7 +23,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const initialData = useRef<any>(null);
+  const [initialData, setInitialData] = useState<any>(null);
 
   const [formData, setFormData] = useState({
     penName: '',
@@ -58,7 +58,7 @@ export default function SettingsPage() {
           interests: data.interests || [],
         };
         setFormData(resolvedData);
-        initialData.current = resolvedData;
+        setInitialData(resolvedData);
         setLoading(false);
       })
       .catch(() => {
@@ -67,16 +67,10 @@ export default function SettingsPage() {
   }, []);
  
   const hasChanges = useMemo(() => {
-    if (!initialData.current) return false;
-    return !isDeepEqual(initialData.current, formData);
-  }, [formData]);
+    if (!initialData) return false;
+    return !isDeepEqual(initialData, formData);
+  }, [formData, initialData]);
 
-  // Sync with global navigation guard
-  useEffect(() => {
-    setDirty(hasChanges);
-    return () => setDirty(false);
-  }, [hasChanges, setDirty]);
- 
   const [backDialogOpen, setBackDialogOpen] = useState(false);
 
   const handleBack = () => {
@@ -88,7 +82,16 @@ export default function SettingsPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const updatedForm = { ...formData, [name]: value };
+    setFormData(updatedForm);
+    setDirty(!isDeepEqual(updatedForm, initialData));
+  };
+
+  const handleTopicsChange = (newTags: string[]) => {
+    const updatedForm = { ...formData, interests: newTags };
+    setFormData(updatedForm);
+    setDirty(!isDeepEqual(updatedForm, initialData));
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,7 +145,9 @@ export default function SettingsPage() {
 
     if (res.ok) {
       toast.success('Settings updated successfully!');
-      initialData.current = { ...formData };
+      const savedData = JSON.parse(JSON.stringify(formData));
+      setInitialData(savedData);
+      setDirty(false);
       window.dispatchEvent(new CustomEvent('user-updated'));
     } else { toast.error('Failed to update settings'); }
     setSaving(false);
@@ -169,12 +174,15 @@ export default function SettingsPage() {
     <PageContainer
       title="Account Settings"
       subtitle="Manage your public profile and preferences."
-      icon={<Settings size={20} />}
+      icon={<Settings size={18} />}
       onBack={handleBack}
       action={
-        <Button onClick={handleSave} disabled={saving || !hasChanges} className="h-11 px-8">
-          {saving ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Save size={18} className="mr-2" />}
-          {saving ? 'Updating...' : 'Save Changes'}
+        <Button onClick={() => {
+          if (!hasChanges) return toast.info("No changes to save.");
+          handleSave();
+        }} className="h-11 px-8 cursor-pointer shadow-lg shadow-primary/20">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save size={18} className="mr-2" />}
+          Save Changes
         </Button>
       }
     >
@@ -182,19 +190,19 @@ export default function SettingsPage() {
         <div className="space-y-8">
           {/* Profile Section */}
           <section className="space-y-9">
-            <div className="flex items-center space-x-3 text-foreground font-black uppercase tracking-widest text-[10px]">
-              <UserIcon className="w-4 h-4 text-primary" />
+            <div className="flex items-center space-x-3 text-foreground font-bold text-xs">
+              <UserIcon size={18} className="text-primary" />
               <span>Public Profile</span>
             </div>
 
             <div className="flex flex-col md:flex-row gap-8 items-start">
               <div className="relative group">
-                <Avatar className="h-32 w-32 rounded-[24px] ring-2 ring-primary/5 shadow-xl border border-border/50 p-0.5 bg-white overflow-visible transition-transform duration-500 group-hover:scale-105">
+                <Avatar className="h-32 w-32 rounded-full ring-2 ring-primary/5 shadow-xl border border-border/50 p-0.5 bg-white overflow-visible transition-transform duration-500 group-hover:scale-105">
                   <AvatarImage
                     src={formData.profilePicture || undefined}
-                    className={`rounded-[22px] object-cover transition-opacity duration-300 ${uploading ? 'opacity-30' : 'opacity-100'}`}
+                    className="rounded-full object-cover transition-opacity duration-300"
                   />
-                  <AvatarFallback className="bg-primary text-white font-black text-2xl rounded-[22px] uppercase">
+                  <AvatarFallback className="bg-primary text-white font-bold text-[10px] rounded-full">
                     {getInitials(formData.penName, formData.firstName, formData.lastName)}
                   </AvatarFallback>
                   {uploading && (
@@ -212,7 +220,7 @@ export default function SettingsPage() {
                       className="absolute -top-2 -right-2 p-2 bg-white text-destructive rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-destructive/5 transition-all hover:scale-110 ring-1 ring-border/20"
                       title="Remove image"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                     </button>
                   )}
                 </Avatar>
@@ -220,18 +228,18 @@ export default function SettingsPage() {
 
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-8 w-full transition-all">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Pen Name</label>
+                  <label className="text-xs font-bold text-muted-foreground px-1">Pen Name</label>
                   <input
                     name="penName"
                     value={formData.penName}
                     onChange={handleChange}
                     className="w-full px-5 py-4 rounded-xl border border-border/50 bg-secondary/20 font-bold text-foreground focus:ring-4 focus:ring-primary/5 focus:border-primary/20 outline-none transition-[border-color,box-shadow,background-color] placeholder:text-muted-foreground/30 text-sm"
-                    placeholder="WANDERLUST"
+                    placeholder="Wanderlust"
                   />
                   <p className="text-[10px] font-bold text-muted-foreground leading-relaxed px-1 italic">This is how you'll be credited on your stories.</p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Email Address</label>
+                  <label className="text-xs font-bold text-muted-foreground px-1">Email Address</label>
                   <input
                     name="email"
                     value={formData.email}
@@ -240,7 +248,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">First Name</label>
+                  <label className="text-xs font-bold text-muted-foreground px-1">First Name</label>
                   <input
                     name="firstName"
                     value={formData.firstName}
@@ -249,7 +257,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-1">Last Name</label>
+                  <label className="text-xs font-bold text-muted-foreground px-1">Last Name</label>
                   <input
                     name="lastName"
                     value={formData.lastName}
@@ -263,14 +271,18 @@ export default function SettingsPage() {
 
           {/* Content Section */}
           <section className="space-y-9 pt-2">
-            <div className="flex items-center space-x-3 text-foreground font-black uppercase tracking-widest text-[10px]">
-              <Palette className="w-4 h-4 text-primary" />
+            <div className="flex items-center space-x-3 text-foreground font-bold text-xs">
+              <Palette size={18} className="text-primary" />
               <span>Personalization</span>
             </div>
             <div className="relative">
               <TagPicker
                 selectedTags={formData.interests}
-                onChange={(newInterests) => setFormData({ ...formData, interests: newInterests })}
+                onChange={(newInterests) => {
+                  const updatedForm = { ...formData, interests: newInterests };
+                  setFormData(updatedForm);
+                  setDirty(!isDeepEqual(updatedForm, initialData.current));
+                }}
                 label="Topics You Follow"
                 placeholder="Select topics you love (Self-Help, Mindfulness, etc.)"
               />

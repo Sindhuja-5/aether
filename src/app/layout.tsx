@@ -52,7 +52,7 @@ export default async function RootLayout({
             </div>
           </NavigationGuardProvider>
         </SidebarProvider>
-        <Toaster richColors position="bottom-right" />
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );
