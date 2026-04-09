@@ -74,20 +74,20 @@ export default function BlogCard({ blog, onDelete, hideStatusBadge }: { blog: an
 
   return (
     <Link href={destination} className="block group h-full">
-      <div className="aether-card aether-card-hover p-6 relative overflow-hidden flex flex-col h-full transition-all duration-500 bg-white group-hover:border-primary/20">
+      <div className="aether-card aether-card-hover p-4 sm:p-5 relative overflow-hidden flex flex-col h-full transition-all duration-500 bg-white group-hover:border-primary/20">
         {/* Header: Pure Author Info */}
-        <div className="flex items-center space-x-3 min-w-0 mb-5 relative z-20">
-          <Avatar className="h-9 w-9 border border-border/50 shrink-0">
+        <div className="flex items-center space-x-4 min-w-0 mb-4 relative z-20">
+          <Avatar className="h-8 w-8 border border-border/50 shrink-0">
             <AvatarImage src={blog.authorId?.profilePicture || undefined} className="object-cover" />
-            <AvatarFallback className="bg-primary text-white font-black text-[10px] uppercase">
+            <AvatarFallback className="bg-primary text-white font-black text-[9px] uppercase">
               {getInitials(blog.authorId?.penName || blog.authorId?.firstName || 'A')}
             </AvatarFallback>
           </Avatar>
           <div className="space-y-0.5 min-w-0 flex-1">
-            <p className="text-xs font-black text-foreground tracking-tight leading-none pt-0.5 truncate group-hover:text-primary transition-colors">
+            <p className="text-[11px] font-black text-foreground tracking-tight leading-none pt-0.5 truncate group-hover:text-primary transition-colors">
               {blog.authorId?.penName || 'Anonymous'}
             </p>
-            <p className="text-[9px] uppercase font-bold text-muted-foreground tracking-[0.1em] leading-none">
+            <p className="text-[8px] uppercase font-bold text-muted-foreground tracking-[0.05em] leading-none">
               {format(new Date(blog.createdAt), 'MMM d, yyyy')}
             </p>
           </div>
@@ -95,7 +95,7 @@ export default function BlogCard({ blog, onDelete, hideStatusBadge }: { blog: an
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1">
-            <div className="aspect-[3/2] w-full overflow-hidden rounded-xl mb-6 bg-secondary/50 shadow-sm border border-border/50 relative">
+            <div className="aspect-[3/2] w-full overflow-hidden rounded-lg mb-4 bg-secondary/50 shadow-sm border border-border/50 relative">
               {blog.previewImage ? (
                 <img
                   src={blog.previewImage}
@@ -105,10 +105,10 @@ export default function BlogCard({ blog, onDelete, hideStatusBadge }: { blog: an
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-primary/10 via-background to-secondary/30 flex items-center justify-center relative overflow-hidden">
                   {/* Modern geometric detail */}
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-8 -mt-8" />
-                  <div className="absolute bottom-0 left-0 w-16 h-16 bg-primary/5 rounded-full -ml-4 -mb-4" />
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -mr-6 -mt-6" />
+                  <div className="absolute bottom-0 left-0 w-12 h-12 bg-primary/5 rounded-full -ml-3 -mb-3" />
                   
-                  <BookOpen className="w-8 h-8 text-primary/20 transition-transform duration-500 group-hover:scale-110 group-hover:text-primary/30" strokeWidth={1.5} />
+                  <BookOpen className="w-6 h-6 text-primary/20 transition-transform duration-500 group-hover:scale-110 group-hover:text-primary/30" strokeWidth={1.5} />
                 </div>
               )}
             </div>
@@ -123,7 +123,7 @@ export default function BlogCard({ blog, onDelete, hideStatusBadge }: { blog: an
               )}
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-black text-foreground mb-6 line-clamp-3 group-hover:text-primary transition-all tracking-tight leading-tight">
+            <h2 className="text-lg sm:text-xl font-black text-foreground mb-4 line-clamp-3 group-hover:text-primary transition-all tracking-tight leading-snug">
               {blog.title}
             </h2>
           </div>

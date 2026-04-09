@@ -14,11 +14,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { useNavigationGuard } from '@/context/NavigationGuardContext';
 
 export default function Navbar({ user: initialUser }: { user: any }) {
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { confirmNavigation } = useNavigationGuard();
   const [searchValue, setSearchValue] = useState(searchParams.get('q') || '');
   const [user, setUser] = useState(initialUser);
 
@@ -56,7 +58,7 @@ export default function Navbar({ user: initialUser }: { user: any }) {
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       const trimmed = searchValue.trim();
-      router.push(trimmed ? `/?q=${encodeURIComponent(trimmed)}` : '/');
+      confirmNavigation(trimmed ? `/?q=${encodeURIComponent(trimmed)}` : '/');
     }
   };
 
@@ -71,14 +73,14 @@ export default function Navbar({ user: initialUser }: { user: any }) {
     }`}>
       <div className="max-w-[1400px] mx-auto px-6 flex items-center justify-between">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center space-x-2 group shrink-0">
+        <button onClick={() => confirmNavigation('/')} className="flex items-center space-x-2 group shrink-0 border-none bg-transparent cursor-pointer">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 rotate-[-4deg] group-hover:rotate-0 transition-transform duration-300">
             <span className="text-white font-black text-lg">A</span>
           </div>
           <span className="text-xl font-black text-foreground tracking-tighter pt-0.5">
             Aether
           </span>
-        </Link>
+        </button>
 
         {/* Search */}
         <div className="flex-1 max-w-xl px-12 hidden sm:block">
@@ -86,7 +88,7 @@ export default function Navbar({ user: initialUser }: { user: any }) {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <input 
                 type="text" 
-                placeholder="Search ideas, topics, authors..." 
+                placeholder="Search ideas, topics, or authors..." 
                 value={searchValue}
                 onChange={(e) => handleSearch(e.target.value)}
                 onKeyDown={onKeyDown}
@@ -103,10 +105,8 @@ export default function Navbar({ user: initialUser }: { user: any }) {
             </Button>
           ) : (
             <div className="flex items-center space-x-2">
-              <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                 <Link href="/blog/new">
-                   <PenSquare size={18} strokeWidth={2.5} />
-                 </Link>
+              <Button onClick={() => confirmNavigation('/blog/new')} variant="ghost" size="icon" className="text-muted-foreground hover:text-primary cursor-pointer">
+                <PenSquare size={18} strokeWidth={2.5} />
               </Button>
 
               <div className="w-1 sm:w-4" /> {/* Spacer */}

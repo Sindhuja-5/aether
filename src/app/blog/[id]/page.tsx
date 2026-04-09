@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import TiptapEditor from '@/components/TiptapEditor';
 import PageContainer from '@/components/PageContainer';
@@ -13,11 +13,14 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { uploadImageToS3 } from '@/lib/upload';
+import { isDeepEqual } from '@/lib/utils';
 import { Save, Send, Image as ImageIcon, Loader2, PenSquare, Trash2, FileText, ChevronLeft, CheckCircle, Heart, Share2, BookOpen } from 'lucide-react';
+import { useNavigationGuard } from '@/context/NavigationGuardContext';
 
 export default function BlogRoute() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { setDirty } = useNavigationGuard();
   const isNew = id === 'new';
 
   const [blog, setBlog] = useState<any>(null); // Kept for viewing metadata like author picture
@@ -30,7 +33,7 @@ export default function BlogRoute() {
 
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [hasChanges, setHasChanges] = useState(false);
+  const initialData = useRef<any>(null);
   const [editor, setEditor] = useState<any>(null);
 
   const [backDialogOpen, setBackDialogOpen] = useState(false);
@@ -66,9 +69,28 @@ export default function BlogRoute() {
         setStatus(blogData.status);
         setTags(blogData.tags || []);
 
+        initialData.current = {
+          title: blogData.title || '',
+          body: blogData.body,
+          previewImage: blogData.previewImage || null,
+          tags: blogData.tags || []
+        };
+
         if (Array.isArray(favData) && favData.some((f: any) => (f.blogId?._id === id || f.blogId === id))) {
           setIsFavorited(true);
         }
+      } else if (isNew) {
+        const emptyDoc = { type: 'doc', content: [{ type: 'paragraph' }] };
+        setTitle('');
+        setBody(emptyDoc);
+        setTags([]);
+        setPreviewImage(null);
+        initialData.current = {
+          title: '',
+          body: emptyDoc,
+          previewImage: null,
+          tags: []
+        };
       } else if (!isNew && (!blogData || blogData.error)) {
         toast.error('Story not found.');
         window.location.href = '/';
@@ -76,6 +98,18 @@ export default function BlogRoute() {
       setLoading(false);
     });
   }, [id, isNew, router]);
+
+  const hasChanges = useMemo(() => {
+    if (!initialData.current) return false;
+    const currentData = { title, body, previewImage, tags };
+    return !isDeepEqual(initialData.current, currentData);
+  }, [title, body, previewImage, tags]);
+
+  // Sync with global navigation guard
+  useEffect(() => {
+    setDirty(hasChanges);
+    return () => setDirty(false);
+  }, [hasChanges, setDirty]);
 
   const currentUserId = currentUser?._id || currentUser?.id;
   const authorId = blog?.authorId?._id || blog?.authorId;
@@ -122,14 +156,28 @@ export default function BlogRoute() {
     try {
       const url = await uploadImageToS3(file);
       setPreviewImage(url);
-      setHasChanges(true);
       toast.success('Cover image updated');
     } catch { toast.error('Upload failed'); }
     finally { setUploading(false); }
   };
 
   const handleSave = async (saveStatus: 'draft' | 'published') => {
-    if (!title.trim()) { toast.warning('A story needs a title'); return; }
+    if (!title.trim()) { toast.warning('A story needs a title.'); return; }
+    
+    // Quality Checks for Publishing
+    if (saveStatus === 'published') {
+      if (!tags || tags.length === 0) {
+        toast.warning('Please select at least one topic to help others discover your story.');
+        return;
+      }
+      
+      const editorText = editor?.getText().trim() || "";
+      if (editorText.length < 20) {
+        toast.warning('Your story is a bit short! Add some more depth before publishing.');
+        return;
+      }
+    }
+
     setSaving(true);
     const content = editor?.getJSON() || body;
     const payload = { title, body: content, previewImage, status: saveStatus, tags };
@@ -142,7 +190,12 @@ export default function BlogRoute() {
         const savedBlog = await res.json();
         toast.success(saveStatus === 'published' ? 'Story published!' : 'Draft saved.');
         setStatus(savedBlog.status);
-        setHasChanges(false);
+        initialData.current = {
+          title: savedBlog.title || '',
+          body: savedBlog.body,
+          previewImage: savedBlog.previewImage || null,
+          tags: savedBlog.tags || []
+        };
         if (isNew) router.push(`/blog/${savedBlog._id}`);
       } else { toast.error('Failed to save story'); }
     } catch { toast.error('An error occurred'); }
@@ -193,22 +246,12 @@ export default function BlogRoute() {
 
   return (
     <PageContainer
-      title=""
+      title={isNew ? 'New Story' : title || 'Edit Story'}
+      subtitle={isEditMode ? "Workspace" : "Viewer"}
+      icon={isEditMode ? <PenSquare size={20} /> : <BookOpen size={20} />}
+      onBack={handleBack}
       action={
         <div className="flex items-center space-x-2 bg-secondary/30 p-1 rounded-xl border border-border/50">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleBack}
-            className={`h-9 text-muted-foreground cursor-pointer px-3 transition-all ${(isAuthor || (currentUser && !isNew))
-                ? 'border-r border-border/40 rounded-none'
-                : 'rounded-xl'
-              }`}
-          >
-            <ChevronLeft size={14} className="mr-2" />
-            Back
-          </Button>
-
           {currentUser && !isAuthor && !isNew && (
             <Button variant="ghost" size="sm" onClick={toggleFavorite} className="h-9 cursor-pointer px-3">
               <Heart size={14} fill={isFavorited ? "currentColor" : "none"} className={`mr-2 ${isFavorited ? 'text-primary' : ''}`} />
@@ -227,14 +270,14 @@ export default function BlogRoute() {
               {isEditMode && (
                 <Button variant="ghost" size="sm" onClick={() => handleSave('draft')} disabled={saving} className="h-9 cursor-pointer px-3">
                   <Save size={14} className="mr-2" />
-                  Save
+                  Save Draft
                 </Button>
               )}
               <Button
                 variant="default"
                 size="sm"
                 onClick={() => triggerStatusChange(status === 'published' ? 'draft' : 'published')}
-                disabled={saving}
+                disabled={saving || (isEditMode && !hasChanges && !isNew)}
                 className={`h-9 cursor-pointer px-4 ${status === 'published' ? 'bg-amber-500 hover:bg-amber-600 border-none' : ''}`}
               >
                 {status === 'published' ? <FileText size={14} className="mr-2 text-white" /> : <Send size={14} className="mr-2" />}
@@ -258,7 +301,7 @@ export default function BlogRoute() {
         {/* Hero Image Section */}
         <div className="relative group">
           {previewImage ? (
-            <div className={`relative w-full aspect-[21/9] sm:aspect-[16/7] min-h-[250px] max-h-[500px] overflow-hidden ${isEditMode ? 'cursor-pointer' : ''}`}>
+            <div className={`relative w-full aspect-[21/9] sm:aspect-[16/7] min-h-[200px] max-h-[400px] overflow-hidden ${isEditMode ? 'cursor-pointer' : ''}`}>
               <img
                 src={previewImage}
                 alt="Cover"
@@ -276,28 +319,27 @@ export default function BlogRoute() {
                       e.preventDefault();
                       e.stopPropagation();
                       setPreviewImage(null);
-                      setHasChanges(true);
                     }}
-                    className="relative z-10 bg-white text-destructive px-5 py-2.5 rounded-2xl font-black uppercase tracking-widest text-[11px] flex items-center space-x-2 shadow-2xl ring-1 ring-black/5 hover:bg-destructive/5 transition-all hover:scale-105 cursor-pointer"
+                    className="relative z-10 bg-white text-destructive px-4 py-2 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center space-x-2 shadow-2xl ring-1 ring-black/5 hover:bg-destructive/5 transition-all hover:scale-105 cursor-pointer"
                   >
-                    <Trash2 size={16} />
-                    <span>Remove Cover</span>
+                    <Trash2 size={14} />
+                    <span>Remove</span>
                   </button>
                 </div>
               )}
             </div>
           ) : (
             isEditMode && (
-              <label className="flex flex-col items-center justify-center w-full aspect-[21/9] sm:aspect-[16/7] min-h-[200px] border-b border-border/40 cursor-pointer hover:bg-primary/5 transition-all duration-300 group bg-secondary/10">
-                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                  <div className={`p-4 rounded-2xl mb-4 transition-colors ${uploading ? 'bg-muted' : 'bg-primary/5 group-hover:bg-primary/10 shadow-sm'}`}>
+              <label className="flex flex-col items-center justify-center w-full aspect-[21/9] sm:aspect-[16/7] min-h-[150px] border-b border-border/40 cursor-pointer hover:bg-primary/5 transition-all duration-300 group bg-secondary/10">
+                <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+                  <div className={`p-3 rounded-2xl mb-3 transition-colors ${uploading ? 'bg-muted' : 'bg-primary/5 group-hover:bg-primary/10 shadow-sm'}`}>
                     {uploading ? (
-                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
                     ) : (
-                      <ImageIcon className="w-6 h-6 text-primary" />
+                      <ImageIcon className="w-5 h-5 text-primary" />
                     )}
                   </div>
-                  <p className="text-[12px] font-black text-foreground uppercase tracking-widest">Story Cover Image</p>
+                  <p className="text-[10px] font-black text-foreground uppercase tracking-widest">Story Cover Image</p>
                 </div>
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               </label>
@@ -306,53 +348,51 @@ export default function BlogRoute() {
         </div>
 
         {/* Content Section */}
-        <div className="p-6 sm:p-10 md:p-14">
-          <div className={`mb-12 pb-12 border-b border-border/50 ${isAuthor && status === 'published' ? 'opacity-90' : ''}`}>
+        <div className="p-4 sm:p-5 md:p-6">
+          <div className={`mb-6 ${isAuthor && status === 'published' ? 'opacity-90' : ''}`}>
             {isEditMode ? (
               <textarea
                 placeholder="Enter Story Title..."
-                className="w-full text-2xl sm:text-4xl md:text-5xl font-black text-foreground placeholder:text-muted-foreground/30 border-none bg-transparent focus:outline-none resize-none overflow-hidden leading-tight tracking-tighter transition-all"
+                className="w-full text-2xl sm:text-3xl md:text-4xl font-bold text-foreground placeholder:text-muted-foreground/30 border-none bg-transparent focus:outline-none resize-none overflow-hidden leading-tight tracking-tight transition-all"
                 rows={1}
                 value={title}
                 onChange={(e) => {
                   setTitle(e.target.value);
-                  setHasChanges(true);
                   e.target.style.height = 'auto';
                   e.target.style.height = e.target.scrollHeight + 'px';
                 }}
               />
             ) : (
               <>
-                <h1 className="w-full text-3xl md:text-5xl lg:text-6xl font-black text-foreground leading-[1.1] tracking-tighter">
+                <h1 className="w-full text-2xl md:text-3xl lg:text-4xl font-bold text-foreground leading-[1.1] tracking-tight">
                   {title}
                 </h1>
                 {!isNew && blog?.authorId && (
-                  <div className="flex items-center space-x-4 mt-10">
-                    <Avatar className="h-12 w-12 ring-2 ring-primary/10 border-2 border-white shadow-md">
+                  <div className="flex items-center space-x-3 mt-6">
+                    <Avatar className="h-10 w-10 ring-2 ring-primary/5 border border-white shadow-sm">
                       <AvatarImage src={blog.authorId?.profilePicture || undefined} className="object-cover" />
-                      <AvatarFallback className="bg-primary text-white font-black text-sm uppercase">
+                      <AvatarFallback className="bg-primary text-white font-black text-xs uppercase">
                         {blog.authorId?.penName?.[0] || 'A'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-base font-black tracking-tight text-foreground">{blog.authorId?.penName}</p>
-                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest opacity-70">{format(new Date(blog.createdAt || Date.now()), 'MMMM d, yyyy')}</p>
+                      <p className="text-sm font-bold tracking-tight text-foreground">{blog.authorId?.penName}</p>
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">{format(new Date(blog.createdAt || Date.now()), 'MMM d, yyyy')}</p>
                     </div>
                   </div>
                 )}
               </>
             )}
 
-            <div className="mt-8">
+            <div className="mt-5">
               {isEditMode ? (
                 <TagPicker
                   selectedTags={tags}
                   onChange={(newTags) => {
                     setTags(newTags);
-                    setHasChanges(true);
                   }}
-                  label=""
-                  placeholder="Categorize your story..."
+                  label="Story Topics"
+                  placeholder="Choose topics (Design, Tech, Life...)"
                 />
               ) : (
                 (tags && tags.length > 0) && (
@@ -374,7 +414,6 @@ export default function BlogRoute() {
               onChange={(newBody) => {
                 if (JSON.stringify(newBody) === JSON.stringify(body)) return;
                 setBody(newBody);
-                setHasChanges(true);
               }}
               onSave={() => isEditMode && handleSave(status)}
               setEditor={setEditor}

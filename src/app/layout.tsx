@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Sidebar from '@/components/Sidebar';
 import { auth0 } from "@/lib/auth0";
 import { SidebarProvider } from "@/context/SidebarContext";
+import { NavigationGuardProvider } from "@/context/NavigationGuardContext";
 import { Toaster } from "@/components/ui/sonner";
 import LayoutClient from "./layout-client";
 import { Suspense } from "react";
@@ -39,15 +40,17 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-blue-100 flex flex-col min-h-screen bg-gray-50`}
       >
         <SidebarProvider>
-          <Suspense fallback={null}>
-            <Navbar user={user || null} />
-          </Suspense>
-          <div className="flex flex-1 relative min-h-screen">
-            {isLoggedIn && <Sidebar />}
-            <LayoutClient isLoggedIn={isLoggedIn}>
-              {children}
-            </LayoutClient>
-          </div>
+          <NavigationGuardProvider>
+            <Suspense fallback={null}>
+              <Navbar user={user || null} />
+            </Suspense>
+            <div className="flex flex-1 relative min-h-screen">
+              {isLoggedIn && <Sidebar />}
+              <LayoutClient isLoggedIn={isLoggedIn}>
+                {children}
+              </LayoutClient>
+            </div>
+          </NavigationGuardProvider>
         </SidebarProvider>
         <Toaster richColors position="bottom-right" />
       </body>

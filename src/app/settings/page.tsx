@@ -8,12 +8,22 @@ import { Settings, User as UserIcon, Palette, Loader2, Save, Camera, Trash2 } fr
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { isDeepEqual } from '@/lib/utils';
+import { useRef, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useNavigationGuard } from '@/context/NavigationGuardContext';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const { setDirty } = useNavigationGuard();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const initialData = useRef<any>(null);
 
   const [formData, setFormData] = useState({
     penName: '',
@@ -39,20 +49,43 @@ export default function SettingsPage() {
       .then(data => {
         if (!data) return; // Happens if we redirected on 401
         setUser(data);
-        setFormData({
+        const resolvedData = {
           penName: data.penName || '',
           email: data.email || '',
           firstName: data.firstName || '',
           lastName: data.lastName || '',
           profilePicture: data.profilePicture || '',
           interests: data.interests || [],
-        });
+        };
+        setFormData(resolvedData);
+        initialData.current = resolvedData;
         setLoading(false);
       })
       .catch(() => {
         setLoading(false);
       });
   }, []);
+ 
+  const hasChanges = useMemo(() => {
+    if (!initialData.current) return false;
+    return !isDeepEqual(initialData.current, formData);
+  }, [formData]);
+
+  // Sync with global navigation guard
+  useEffect(() => {
+    setDirty(hasChanges);
+    return () => setDirty(false);
+  }, [hasChanges, setDirty]);
+ 
+  const [backDialogOpen, setBackDialogOpen] = useState(false);
+
+  const handleBack = () => {
+    if (hasChanges) {
+      setBackDialogOpen(true);
+    } else {
+      router.back();
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -86,6 +119,20 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
+    // Validation
+    if (!formData.penName.trim()) {
+      toast.warning('A Pen Name is required for your public profile.');
+      return;
+    }
+    if (!formData.firstName.trim()) {
+      toast.warning('Please enter your First Name.');
+      return;
+    }
+    if (formData.interests.length === 0) {
+      toast.warning('Please select at least one topic to curate your feed.');
+      return;
+    }
+
     setSaving(true);
     const res = await fetch('/api/user', {
       method: 'PUT',
@@ -95,6 +142,7 @@ export default function SettingsPage() {
 
     if (res.ok) {
       toast.success('Settings updated successfully!');
+      initialData.current = { ...formData };
       window.dispatchEvent(new CustomEvent('user-updated'));
     } else { toast.error('Failed to update settings'); }
     setSaving(false);
@@ -122,25 +170,26 @@ export default function SettingsPage() {
       title="Account Settings"
       subtitle="Manage your public profile and preferences."
       icon={<Settings size={20} />}
+      onBack={handleBack}
       action={
-        <Button onClick={handleSave} disabled={saving} className="h-11 px-8">
+        <Button onClick={handleSave} disabled={saving || !hasChanges} className="h-11 px-8">
           {saving ? <Loader2 size={18} className="mr-2 animate-spin" /> : <Save size={18} className="mr-2" />}
           {saving ? 'Updating...' : 'Save Changes'}
         </Button>
       }
     >
-      <div className="aether-card p-6 sm:p-10 md:p-12">
-        <div className="space-y-12">
+      <div className="aether-card p-6 sm:p-8 md:p-10">
+        <div className="space-y-8">
           {/* Profile Section */}
-          <section className="space-y-10">
-            <div className="flex items-center space-x-3 text-foreground font-black uppercase tracking-widest text-[11px] pb-4 border-b border-border/50">
+          <section className="space-y-9">
+            <div className="flex items-center space-x-3 text-foreground font-black uppercase tracking-widest text-[10px]">
               <UserIcon className="w-4 h-4 text-primary" />
               <span>Public Profile</span>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-12 items-start">
+            <div className="flex flex-col md:flex-row gap-8 items-start">
               <div className="relative group">
-                <Avatar className="h-32 w-32 rounded-[24px] ring-4 ring-white shadow-2xl border border-border/50 p-0.5 bg-white overflow-visible transition-transform duration-500 group-hover:scale-105">
+                <Avatar className="h-32 w-32 rounded-[24px] ring-2 ring-primary/5 shadow-xl border border-border/50 p-0.5 bg-white overflow-visible transition-transform duration-500 group-hover:scale-105">
                   <AvatarImage
                     src={formData.profilePicture || undefined}
                     className={`rounded-[22px] object-cover transition-opacity duration-300 ${uploading ? 'opacity-30' : 'opacity-100'}`}
@@ -150,11 +199,11 @@ export default function SettingsPage() {
                   </AvatarFallback>
                   {uploading && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      <Loader2 className="w-6 h-6 animate-spin text-primary" />
                     </div>
                   )}
-                  <label className="absolute -bottom-2 -right-2 p-3 bg-white text-primary rounded-2xl shadow-xl border border-border/50 cursor-pointer hover:bg-secondary/50 transition-[background-color,transform,box-shadow] hover:scale-110 ring-1 ring-border/20">
-                    <Camera size={20} strokeWidth={2.5} />
+                  <label className="absolute -bottom-2 -right-2 p-2.5 bg-white text-primary rounded-xl shadow-lg border border-border/50 cursor-pointer hover:bg-secondary/50 transition-[background-color,transform,box-shadow] hover:scale-110 ring-1 ring-border/20">
+                    <Camera size={18} strokeWidth={2.5} />
                     <input type="file" onChange={handleImageUpload} className="hidden" />
                   </label>
                   {formData.profilePicture && (
@@ -213,22 +262,37 @@ export default function SettingsPage() {
           </section>
 
           {/* Content Section */}
-          <section className="space-y-10 pt-4">
-            <div className="flex items-center space-x-3 text-foreground font-black uppercase tracking-widest text-[11px] pb-4 border-b border-border/50">
+          <section className="space-y-9 pt-2">
+            <div className="flex items-center space-x-3 text-foreground font-black uppercase tracking-widest text-[10px]">
               <Palette className="w-4 h-4 text-primary" />
               <span>Personalization</span>
             </div>
-            <div className="relative bg-secondary/20 p-8 rounded-2xl border border-border/50">
+            <div className="relative">
               <TagPicker
                 selectedTags={formData.interests}
                 onChange={(newInterests) => setFormData({ ...formData, interests: newInterests })}
-                label="Curate Your Feed"
+                label="Topics You Follow"
                 placeholder="Select topics you love (Self-Help, Mindfulness, etc.)"
               />
             </div>
           </section>
         </div>
       </div>
+ 
+      <Dialog open={backDialogOpen} onOpenChange={setBackDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard Changes?</DialogTitle>
+            <DialogDescription>
+              You have unsaved changes in your profile. Are you sure you want to leave without saving?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBackDialogOpen(false)}>Keep Editing</Button>
+            <Button variant="destructive" onClick={() => router.back()}>Discard & Exit</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

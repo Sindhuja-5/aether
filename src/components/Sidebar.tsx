@@ -1,14 +1,15 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, BookOpen, Heart, PenSquare, Settings, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useSidebar } from '@/context/SidebarContext';
 import { useState } from 'react';
+import { useNavigationGuard } from '@/context/NavigationGuardContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar, isMobile } = useSidebar();
+  const { confirmNavigation } = useNavigationGuard();
   const [showUpsell, setShowUpsell] = useState(true);
 
   const navItems = [
@@ -24,10 +25,10 @@ export default function Sidebar() {
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
-            <Link key={item.name} href={item.href} className={`flex flex-col items-center justify-center space-y-1 p-2 rounded-xl transition-all duration-200 ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+            <button key={item.name} onClick={() => confirmNavigation(item.href)} className={`flex flex-col items-center justify-center space-y-1 p-2 rounded-xl transition-all duration-200 cursor-pointer border-none bg-transparent ${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
               <item.icon className="w-5 h-5" />
               <span className="text-[10px] font-medium">{item.name}</span>
-            </Link>
+            </button>
           );
         })}
       </nav>
@@ -43,11 +44,11 @@ export default function Sidebar() {
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           return (
-            <Link key={item.name} href={item.href} className={`flex items-center rounded-xl transition-all duration-200 group relative ${isCollapsed ? 'justify-center p-3' : 'space-x-3 px-3 py-2.5'} ${isActive ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`} title={isCollapsed ? item.name : ''}>
+            <button key={item.name} onClick={() => confirmNavigation(item.href)} className={`w-full flex items-center rounded-xl transition-all duration-200 group relative border-none bg-transparent cursor-pointer ${isCollapsed ? 'justify-center p-3' : 'space-x-3 px-3 py-2.5'} ${isActive ? 'bg-blue-50 text-blue-600 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'}`} title={isCollapsed ? item.name : ''}>
               <item.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-900'}`} />
               {!isCollapsed && <span className="text-sm whitespace-nowrap">{item.name}</span>}
               {isCollapsed && <span className="absolute left-full ml-4 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100]">{item.name}</span>}
-            </Link>
+            </button>
           );
         })}
       </div>
