@@ -21,8 +21,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aether | Premium Blog Platform",
-  description: "Explore pure ideas and insights on Aether.",
+  title: "Aether | Tell your stories",
+  description: "Explore heartfelt stories on Aether.",
+  icons: {
+    icon: '/logo.svg',
+    apple: '/logo.svg',
+  },
 };
 
 export default async function RootLayout({

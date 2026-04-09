@@ -102,7 +102,7 @@ export default function BlogCard({ blog, onDelete, hideStatusBadge, hideAuthorAc
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1">
-            <div className="aspect-[3/2] w-full overflow-hidden rounded-lg mb-4 bg-secondary/50 shadow-sm border border-border/50 relative">
+            <div className="aspect-video w-full overflow-hidden rounded-lg mb-4 bg-secondary/30 shadow-sm border border-border/50 relative group">
               {blog.previewImage ? (
                 <img
                   src={blog.previewImage}

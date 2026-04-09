@@ -73,9 +73,11 @@ export default function Navbar({ user: initialUser }: { user: any }) {
       <div className="max-w-[1400px] mx-auto px-6 flex items-center justify-between">
         {/* Brand Logo */}
         <button onClick={() => confirmNavigation('/')} className="flex items-center space-x-2 group shrink-0 border-none bg-transparent cursor-pointer">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 rotate-[-4deg] group-hover:rotate-0 transition-transform duration-300">
-            <span className="text-white font-black text-lg">A</span>
-          </div>
+          <img
+            src="/logo.svg"
+            alt="Aether"
+            className="w-9 h-9 rounded-full object-cover"
+          />
           <span className="text-xl font-black text-foreground tracking-tighter pt-0.5">
             Aether
           </span>

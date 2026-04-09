@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { uploadImageToS3 } from '@/lib/upload';
 import { isDeepEqual } from '@/lib/utils';
-import { Save, Send, Image as ImageIcon, Loader2, PenSquare, Trash2, FileText, ChevronLeft, CheckCircle, Heart, Share2, BookOpen } from 'lucide-react';
+import { Save, Send, Image as ImageIcon, Loader2, PenSquare, Trash2, FileText, ChevronLeft, CheckCircle, Heart, Share2, BookOpen, Eye } from 'lucide-react';
 import { useNavigationGuard } from '@/context/NavigationGuardContext';
 
 export default function BlogRoute() {
@@ -42,6 +42,7 @@ export default function BlogRoute() {
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<'draft' | 'published' | null>(null);
+  const [isPreview, setIsPreview] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -115,8 +116,8 @@ export default function BlogRoute() {
   const authorId = blog?.authorId?._id || blog?.authorId;
   const isAuthor = isNew || Boolean(currentUserId && authorId && String(currentUserId) === String(authorId));
   const isPublished = status === 'published';
-  // You are in edit mode ONLY IF you are the author AND the post is not published yet.
-  const isEditMode = isAuthor && !isPublished;
+  // You are in edit mode ONLY IF you are the author AND the post is not published yet AND we aren't in preview.
+  const isEditMode = isAuthor && !isPublished && !isPreview;
 
   const toggleFavorite = async () => {
     if (!currentUser) return toast.info('Please login to favorite stories.');
@@ -156,7 +157,7 @@ export default function BlogRoute() {
     try {
       const url = await uploadImageToS3(file);
       setPreviewImage(url);
-      toast.success('Cover image updated');
+      toast.success('Cover image uploaded');
     } catch { toast.error('Upload failed'); }
     finally { setUploading(false); }
   };
@@ -188,7 +189,15 @@ export default function BlogRoute() {
       const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (res.ok) {
         const savedBlog = await res.json();
-        toast.success(saveStatus === 'published' ? 'Story published!' : 'Draft saved.');
+
+        if (saveStatus === 'published') {
+          toast.success('Story published!');
+        } else if (isPublished && saveStatus === 'draft') {
+          toast.success('Story unpublished and moved to drafts.');
+        } else {
+          toast.success('Draft saved.');
+        }
+
         setStatus(savedBlog.status);
 
         // Update baseline to the current state to clear "dirty" flag
@@ -265,6 +274,21 @@ export default function BlogRoute() {
             </Button>
           )}
 
+          {isAuthor && !isPublished && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsPreview(!isPreview)}
+              className="h-9 cursor-pointer px-3 text-primary hover:bg-primary/5"
+            >
+              {isPreview ? (
+                <><PenSquare size={14} className="mr-2" /> Resume Editing</>
+              ) : (
+                <><Eye size={14} className="mr-2" /> Reader Preview</>
+              )}
+            </Button>
+          )}
+
           {isAuthor && (
             <>
               {!isNew && (
@@ -313,11 +337,11 @@ export default function BlogRoute() {
         {/* Hero Image Section */}
         <div className="relative group">
           {previewImage ? (
-            <div className={`relative w-full aspect-[21/9] sm:aspect-[16/7] min-h-[200px] max-h-[400px] overflow-hidden ${isEditMode ? 'cursor-pointer' : ''}`}>
+            <div className={`relative w-full aspect-video min-h-[250px] overflow-hidden bg-black/5 ${isEditMode ? 'cursor-pointer' : ''}`}>
               <img
                 src={previewImage}
                 alt="Cover"
-                className={`w-full h-full object-cover transition-all duration-1000 ${isEditMode ? 'group-hover:scale-105' : ''}`}
+                className={`w-full h-full object-cover object-[center_30%] transition-all duration-1000 ${isEditMode ? 'group-hover:scale-105' : ''}`}
               />
 
               {isEditMode && (
@@ -326,32 +350,40 @@ export default function BlogRoute() {
                     <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                   </label>
 
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setPreviewImage(null);
-                    }}
-                    className="relative z-10 bg-white text-destructive px-4 py-2 rounded-xl font-black tracking-widest text-[10px] flex items-center space-x-2 shadow-2xl ring-1 ring-black/5 hover:bg-destructive/5 transition-all hover:scale-105 cursor-pointer"
-                  >
-                    <Trash2 size={14} />
-                    <span>Remove</span>
-                  </button>
+                  <div className="flex flex-col items-center">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setPreviewImage(null);
+                      }}
+                      className="relative z-10 bg-white text-destructive px-4 py-2 rounded-xl font-black tracking-widest text-[10px] flex items-center space-x-2 shadow-2xl ring-1 ring-black/5 hover:bg-destructive/5 transition-all hover:scale-105 cursor-pointer"
+                    >
+                      <Trash2 size={14} />
+                      <span>Remove</span>
+                    </button>
+                    <span className="mt-2 text-[10px] text-white/80 font-medium bg-black/20 px-2 py-1 rounded-full backdrop-blur-sm">
+                      Recommended: 16:9 Widescreen
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
           ) : (
             isEditMode && (
-              <label className="flex flex-col items-center justify-center w-full aspect-[21/9] sm:aspect-[16/7] min-h-[150px] border-b border-border/40 cursor-pointer hover:bg-primary/5 transition-all duration-300 group bg-secondary/10">
-                <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-                  <div className={`p-3 rounded-2xl mb-3 transition-colors ${uploading ? 'bg-muted' : 'bg-primary/5 group-hover:bg-primary/10 shadow-sm'}`}>
+              <label className="flex flex-col items-center justify-center w-full aspect-video min-h-[250px] cursor-pointer hover:bg-white transition-all duration-300 group bg-secondary/20 overflow-hidden relative border border-border">
+                <div className="flex flex-col items-center justify-center p-6 text-center z-10">
+                  <div className={`p-4 rounded-3xl mb-4 transition-all duration-500 ${uploading ? 'bg-muted' : 'bg-white shadow-sm border border-border/50 group-hover:border-primary/30 group-hover:shadow-md'}`}>
                     {uploading ? (
-                      <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      <Loader2 className="w-8 h-8 animate-spin text-primary" />
                     ) : (
-                      <ImageIcon className="w-5 h-5 text-primary" />
+                      <ImageIcon className="w-8 h-8 text-primary/40 group-hover:text-primary transition-colors" />
                     )}
                   </div>
-                  <p className="text-[10px] font-black text-foreground tracking-widest">Story Cover Image</p>
+                  <p className="text-sm font-bold text-foreground">Click to upload story cover</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5 font-medium bg-white/50 px-3 py-1 rounded-full border border-border/20">
+                    Recommended: 16:9 Widescreen
+                  </p>
                 </div>
                 <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
               </label>
