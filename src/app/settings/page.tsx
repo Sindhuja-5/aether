@@ -186,7 +186,7 @@ export default function SettingsPage() {
         </Button>
       }
     >
-      <div className="aether-card p-6 sm:p-8 md:p-10 w-full max-w-full overflow-hidden">
+      <div className="aether-card p-6 sm:p-8 md:p-10 w-full max-w-full relative">
         <div className="space-y-8">
           {/* Profile Section */}
           <section className="space-y-9">

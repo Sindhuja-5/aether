@@ -148,7 +148,7 @@ export default function TiptapEditor({ initialContent, onChange, onSave, setEdit
         return false;
       },
       attributes: {
-        class: 'prose-edit-zone prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none min-h-[600px] p-8 max-w-none text-foreground leading-relaxed',
+        class: `prose-edit-zone prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl focus:outline-none max-w-none text-foreground leading-relaxed ${!readonly ? 'min-h-[600px] p-8' : 'p-0'}`,
       },
     },
   });
@@ -166,7 +166,10 @@ export default function TiptapEditor({ initialContent, onChange, onSave, setEdit
   }, [editor, readonly]);
 
   return (
-    <div className="bg-white rounded-[2rem] border border-border shadow-sm overflow-hidden min-h-[650px] transition-all hover:shadow-md">
+    <div className={!readonly 
+      ? "bg-white rounded-[2rem] border border-border shadow-sm overflow-hidden min-h-[650px] transition-all hover:shadow-md" 
+      : "w-full min-h-[200px]"
+    }>
       {!readonly && <MenuBar editor={editor} />}
       <div className="relative">
         <EditorContent editor={editor} />

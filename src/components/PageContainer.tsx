@@ -2,6 +2,7 @@
 import React from 'react';
 import { useSidebar } from "@/context/SidebarContext";
 import { ChevronLeft } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 interface PageContainerProps {
   children: React.ReactNode;
@@ -24,37 +25,34 @@ export default function PageContainer({
 }: PageContainerProps) {
   return (
     <div className="w-full pb-12 px-4 shadow-none md:shadow-none">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-6 pt-2">
+      <header className="flex flex-row items-center justify-between flex-wrap gap-x-4 gap-y-3 mb-6 pt-2">
         <div className="flex items-center space-x-1 min-w-0">
           {onBack && (
-            <button 
-              onClick={onBack}
-              className="p-2 -ml-2 hover:bg-secondary rounded-xl transition-colors text-muted-foreground hover:text-primary mr-2 cursor-pointer"
-              title="Go back"
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={onBack} 
+              className="h-10 w-10 -ml-2 rounded-full hover:bg-secondary cursor-pointer shrink-0"
             >
-              <ChevronLeft size={18} />
-            </button>
+              <ChevronLeft size={24} />
+            </Button>
           )}
-          <div className="flex items-center space-x-4 min-w-0">
-            {icon && (
-              <div className="p-3 bg-primary/5 text-primary rounded-2xl shrink-0 border border-primary/10 shadow-sm flex items-center justify-center">
-                {React.cloneElement(icon as React.ReactElement<any>, { size: 18 })}
-              </div>
-            )}
-            <div className="flex flex-col min-w-0">
-              <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight truncate leading-tight">
+          {icon && <div className="text-primary hidden sm:block">{icon}</div>}
+          <div className="min-w-0">
+            {title && (
+              <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight truncate px-1">
                 {title}
               </h1>
-              {subtitle && (
-                <p className="text-sm text-muted-foreground font-medium truncate mt-0.5">
-                  {subtitle}
-                </p>
-              )}
-            </div>
+            )}
+            {subtitle && (
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate px-1">
+                {subtitle}
+              </p>
+            )}
           </div>
         </div>
         {action && (
-          <div className="flex items-center flex-wrap gap-3 mt-2 sm:mt-0">
+          <div className="flex items-center flex-wrap gap-2">
             {action}
           </div>
         )}

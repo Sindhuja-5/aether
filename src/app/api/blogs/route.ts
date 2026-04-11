@@ -12,27 +12,62 @@ export async function GET(req: NextRequest) {
     const query = searchParams.get('q') || '';
     const exclusive = searchParams.get('exclusive') === 'true';
 
-    // Search Logic
-    let searchFilter: any = { status };
-    
+    // 1. Search Logic using Atlas Search (if query exists)
     if (query) {
-      // Search in title, tags, and penName
-      searchFilter.$or = [
-        { title: { $regex: query, $options: 'i' } },
-        { tags: { $regex: query, $options: 'i' } }
+      const pipeline: any[] = [
+        {
+          $search: {
+            index: "index-blog",
+            compound: {
+              must: [
+                {
+                  text: {
+                    query: query,
+                    path: { wildcard: "*" },
+                    fuzzy: { maxEdits: 2 }
+                  }
+                }
+              ],
+              filter: [
+                {
+                  text: {
+                    query: status,
+                    path: 'status'
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'authorId',
+            foreignField: '_id',
+            as: 'authorId'
+          }
+        },
+        { $unwind: '$authorId' },
+        {
+          $project: {
+            'authorId.auth0Id': 0,
+            'authorId.email': 0,
+            'authorId.interests': 0
+          }
+        },
+        {
+          $addFields: {
+            score: { $meta: "searchScore" }
+          }
+        },
+        { $sort: { score: -1 } }
       ];
 
-      // If we want to search by author penName, we need to find those users first
-      const matchingAuthors = await User.find({ penName: { $regex: query, $options: 'i' } }).select('_id');
-      if (matchingAuthors.length > 0) {
-        searchFilter.$or.push({ authorId: { $in: matchingAuthors.map(a => a._id) } });
-      }
-
-      // Note: Searching inside 'body' (Tiptap JSON) is complex at the DB level 
-      // without MongoDB Atlas Search. Here we search the title/tags/author.
+      const blogs = await Blog.aggregate(pipeline);
+      return NextResponse.json(blogs);
     }
 
-    // 1. Exclusive Interest-based Feed (For You)
+    // 2. Exclusive Interest-based Feed (For You)
     if (!query && exclusive) {
       const session = await auth0.getSession();
       if (session?.user && status === 'published') {
@@ -48,17 +83,13 @@ export async function GET(req: NextRequest) {
           .sort({ createdAt: -1 });
           
           return NextResponse.json(interestBlogs);
-        } else {
-          // If user has no interests, For You is empty
-          return NextResponse.json([]);
         }
       }
-      // If not logged in, For You is empty
       return NextResponse.json([]);
     }
 
-    // 2. Global Feed or Search (Discover)
-    const blogs = await Blog.find(searchFilter)
+    // 3. Global Feed (Discover)
+    const blogs = await Blog.find({ status })
       .populate({ path: 'authorId', select: 'penName profilePicture', model: User })
       .sort({ createdAt: -1 });
 
