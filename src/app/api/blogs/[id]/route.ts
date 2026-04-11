@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import User from '@/models/User';
-import { auth0 } from '@/lib/auth0';
+import { getAuthenticatedUser } from '@/lib/authHelper';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,12 +18,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth0.getSession();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    await dbConnect();
     const p = await params;
-    const user = await User.findOne({ auth0Id: session.user.sub });
     const blog = await Blog.findById(p.id);
 
     if (!blog || blog.authorId.toString() !== user._id.toString()) {
@@ -40,12 +38,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await auth0.getSession();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    await dbConnect();
     const p = await params;
-    const user = await User.findOne({ auth0Id: session.user.sub });
     const blog = await Blog.findById(p.id);
 
     if (!blog || blog.authorId.toString() !== user._id.toString()) {

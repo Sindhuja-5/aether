@@ -16,6 +16,8 @@ import { uploadImageToS3 } from '@/lib/upload';
 import { isDeepEqual } from '@/lib/utils';
 import { Save, Send, Image as ImageIcon, Loader2, PenSquare, Trash2, FileText, ChevronLeft, CheckCircle, Heart, Share2, BookOpen, Eye, Camera } from 'lucide-react';
 import { useNavigationGuard } from '@/context/NavigationGuardContext';
+import { DeleteBlogDialog } from '@/components/DeleteBlogDialog';
+import { PublishDialog } from '@/components/PublishDialog';
 
 export default function BlogRoute() {
   const { id } = useParams<{ id: string }>();
@@ -60,7 +62,7 @@ export default function BlogRoute() {
     ]).then(([userData, blogData, favData]) => {
       if (userData?.error && isNew) {
         toast.info('Please log in to create a story.');
-        window.location.href = '/';
+        router.push('/');
         return;
       }
 
@@ -98,7 +100,7 @@ export default function BlogRoute() {
         });
       } else if (!isNew && (!blogData || blogData.error)) {
         toast.error('Story not found.');
-        window.location.href = '/';
+        router.push('/');
       }
       setLoading(false);
     });
@@ -244,12 +246,11 @@ export default function BlogRoute() {
   const handleBack = () => {
     if (isEditMode && hasChanges) {
       setBackDialogOpen(true);
+    } else if (isAuthor) {
+      // If author, always prefer going back to their dashboard
+      router.push('/my-blogs');
     } else {
-      if (window.history.length > 2) {
-        router.back();
-      } else {
-        router.push(isEditMode ? '/my-blogs' : '/');
-      }
+      router.back();
     }
   };
 
@@ -495,42 +496,19 @@ export default function BlogRoute() {
         </div>
       </div>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Story?</DialogTitle>
-            <DialogDescription>This action is permanent and cannot be undone.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? 'Deleting...' : 'Delete Permanently'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteBlogDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onDelete={handleDelete}
+        deleting={deleting}
+      />
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{pendingStatus === 'published' ? 'Publish Story?' : 'Unpublish Story?'}</DialogTitle>
-            <DialogDescription>
-              {pendingStatus === 'published'
-                ? 'This will make your story visible to the public. Ready to share?'
-                : 'This will move your story back to drafts and hide it from the public.'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-            <Button
-              variant={pendingStatus === 'published' ? 'default' : 'destructive'}
-              onClick={() => pendingStatus && handleSave(pendingStatus)}
-            >
-              {pendingStatus === 'published' ? 'Yes, Publish' : 'Yes, Unpublish'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PublishDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        pendingStatus={pendingStatus}
+        onConfirm={handleSave}
+      />
 
       <Dialog open={backDialogOpen} onOpenChange={setBackDialogOpen}>
         <DialogContent className="rounded-2xl p-8">

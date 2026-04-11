@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
 import Favorite from '@/models/Favorite';
-import User from '@/models/User';
 import Blog from '@/models/Blog';
-import { auth0 } from '@/lib/auth0';
+import User from '@/models/User';
+import { getAuthenticatedUser } from '@/lib/authHelper';
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth0.getSession();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    await dbConnect();
-    const user = await User.findOne({ auth0Id: session.user.sub });
-    
-    // Support populating the actual blogs
     const favorites = await Favorite.find({ userId: user._id })
       .populate({
         path: 'blogId',
@@ -30,11 +25,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth0.getSession();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    await dbConnect();
-    const user = await User.findOne({ auth0Id: session.user.sub });
     const { blogId } = await req.json();
 
     const existing = await Favorite.findOne({ userId: user._id, blogId });

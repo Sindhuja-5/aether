@@ -2,20 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Edit2, Trash2, Plus, BookOpen, Loader2, FileText, CheckCircle, ListFilter } from 'lucide-react';
+import { Edit2, Trash2, Plus, BookOpen, FileText, ListFilter } from 'lucide-react';
 import PageContainer from '@/components/PageContainer';
-import BlogCard from '@/components/BlogCard';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { BlogGrid } from '@/components/BlogGrid';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DeleteBlogDialog } from '@/components/DeleteBlogDialog';
 
 export default function MyBlogs() {
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -32,7 +26,7 @@ export default function MyBlogs() {
       .then(async res => {
         if (!res.ok) {
           if (res.status === 401) {
-            window.location.href = '/';
+            router.push('/');
             return null;
           }
           throw new Error('Failed to fetch blogs');
@@ -128,10 +122,7 @@ export default function MyBlogs() {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-24">
-          <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
-          <p className="text-muted-foreground font-black tracking-widest text-[10px]">Loading your story archive...</p>
-        </div>
+        <LoadingSpinner message="Loading your story archive..." />
       ) : filteredBlogs.length === 0 ? (
         <div className="text-center py-32 bg-secondary/10 rounded-[32px] border-2 border-dashed border-border/40">
           <FileText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-6" />
@@ -141,31 +132,15 @@ export default function MyBlogs() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-8">
-          {filteredBlogs.map((blog: any) => (
-            <BlogCard
-              key={blog._id}
-              blog={blog}
-              onDelete={() => handleDeleteClick(blog._id)}
-            />
-          ))}
-        </div>
+        <BlogGrid blogs={filteredBlogs} onDelete={handleDeleteClick} />
       )}
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Story?</DialogTitle>
-            <DialogDescription>This action is permanent and cannot be undone.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? 'Deleting...' : 'Delete Permanently'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteBlogDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onDelete={handleDelete}
+        deleting={deleting}
+      />
     </PageContainer>
   );
 }

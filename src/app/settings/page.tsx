@@ -39,7 +39,7 @@ export default function SettingsPage() {
       .then(async res => {
         if (!res.ok) {
           if (res.status === 401) {
-            window.location.href = '/';
+            router.push('/');
             return null;
           }
           throw new Error('Failed to fetch user');

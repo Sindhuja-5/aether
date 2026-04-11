@@ -1,8 +1,8 @@
 "use client"
 
 import Link from 'next/link';
-import { PenSquare, LogOut, Settings, BookOpen, Heart, Search, LayoutDashboard } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { PenSquare, LogOut, Search, BookOpen, Settings, LayoutDashboard, Heart } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -105,19 +105,61 @@ export default function Navbar({ user: initialUser }: { user: any }) {
               <a href="/auth/login">Join Now</a>
             </Button>
           ) : (
-            <div className="flex items-center space-x-2">
-              <Button onClick={() => confirmNavigation('/blog/new')} variant="ghost" size="icon" className="text-muted-foreground hover:text-primary cursor-pointer">
+            <div className="flex items-center space-x-3">
+              <Button onClick={() => confirmNavigation('/blog/new')} variant="ghost" size="icon" className="text-muted-foreground hover:text-primary cursor-pointer" title="New Story">
                 <PenSquare size={18} strokeWidth={2.5} />
               </Button>
 
-              <div className="w-1 sm:w-4" /> {/* Spacer */}
+              <div className="h-6 w-[1px] bg-border/40 mx-1 hidden sm:block" />
 
-              <Button asChild variant="ghost" className="h-9 px-4 text-destructive hover:bg-destructive/5 hover:text-destructive font-bold transition-all cursor-pointer rounded-xl">
-                <a href="/auth/logout" className="flex items-center">
-                  <LogOut className="mr-2" size={18} />
-                  <span>Logout</span>
-                </a>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="focus:outline-none cursor-pointer">
+                  <Avatar className="h-9 w-9 border-2 border-transparent hover:border-primary/20 transition-all shadow-sm">
+                    <AvatarImage src={user.picture || undefined} className="object-cover" />
+                    <AvatarFallback className="bg-primary text-white font-bold text-xs">
+                      {getInitials(user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 mt-2 rounded-2xl p-2 shadow-xl border-border/40 bg-background/95 backdrop-blur-xl">
+                  <DropdownMenuLabel className="px-3 py-3">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-black text-foreground tracking-tight truncate">{user.name}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground truncate opacity-70">{user.email}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="bg-border/40" />
+                  
+                  <DropdownMenuItem onClick={() => confirmNavigation('/')} className="rounded-xl cursor-pointer py-2.5 font-bold text-xs focus:bg-primary/5 focus:text-primary transition-all">
+                    <LayoutDashboard className="mr-3 h-4 w-4" />
+                    <span>Feed</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => confirmNavigation('/my-blogs')} className="rounded-xl cursor-pointer py-2.5 font-bold text-xs focus:bg-primary/5 focus:text-primary transition-all">
+                    <BookOpen className="mr-3 h-4 w-4" />
+                    <span>My Stories</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => confirmNavigation('/favorites')} className="rounded-xl cursor-pointer py-2.5 font-bold text-xs focus:bg-primary/5 focus:text-primary transition-all">
+                    <Heart className="mr-3 h-4 w-4" />
+                    <span>Favorites</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem onClick={() => confirmNavigation('/settings')} className="rounded-xl cursor-pointer py-2.5 font-bold text-xs focus:bg-primary/5 focus:text-primary transition-all">
+                    <Settings className="mr-3 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator className="bg-border/40" />
+                  
+                  <DropdownMenuItem asChild className="rounded-xl cursor-pointer py-2.5 font-bold text-xs text-destructive focus:bg-destructive/5 focus:text-destructive transition-all">
+                    <a href="/auth/logout" className="flex items-center w-full">
+                      <LogOut className="mr-3 h-4 w-4" />
+                      <span>Sign Out</span>
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>

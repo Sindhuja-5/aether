@@ -13,8 +13,10 @@ const s3Client = new S3Client({
 
 export async function POST(req: NextRequest) {
   try {
+    // Only a valid Auth0 session is needed to issue a presigned URL;
+    // no DB user record lookup required.
     const session = await auth0.getSession();
-    if (!session || !session.user) {
+    if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

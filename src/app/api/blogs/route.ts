@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import User from '@/models/User';
-import { auth0 } from '@/lib/auth0';
+import { getAuthenticatedUser } from '@/lib/authHelper';
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       const pipeline: any[] = [
         {
           $search: {
-            index: "index-blog",
+            index: process.env.MONGODB_SEARCH_INDEX || "index-blog",
             compound: {
               must: [
                 {
@@ -69,19 +69,18 @@ export async function GET(req: NextRequest) {
 
     // 2. Exclusive Interest-based Feed (For You)
     if (!query && exclusive) {
-      const session = await auth0.getSession();
-      if (session?.user && status === 'published') {
-        const user = await User.findOne({ auth0Id: session.user.sub });
+      const user = await getAuthenticatedUser(req);
+      if (user && status === 'published') {
         const userInterests = user?.interests || [];
 
         if (userInterests.length > 0) {
-          const interestBlogs = await Blog.find({ 
+          const interestBlogs = await Blog.find({
             status: 'published',
             tags: { $in: userInterests }
           })
-          .populate({ path: 'authorId', select: 'penName profilePicture', model: User })
-          .sort({ createdAt: -1 });
-          
+            .populate({ path: 'authorId', select: 'penName profilePicture', model: User })
+            .sort({ createdAt: -1 });
+
           return NextResponse.json(interestBlogs);
         }
       }
@@ -101,12 +100,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth0.getSession();
-    if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    await dbConnect();
-    const user = await User.findOne({ auth0Id: session.user.sub });
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    const user = await getAuthenticatedUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json();
     const blog = await Blog.create({ ...body, authorId: user._id });
