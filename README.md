@@ -1,6 +1,6 @@
 # Aether | Tell your stories
 
-**Aether** is a professional, full-stack blogging platform built with Next.js, MongoDB, and AWS S3. It offers a seamless writing experience coupled with a beautiful, high-performance reader interface.
+**Aether** is a professional, full-stack  story publishing platform built with Next.js, MongoDB, and AWS S3. It offers a seamless writing experience coupled with a beautiful, high-performance reader interface.
 
 ## ✨ Key Features
 
