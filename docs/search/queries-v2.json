@@ -1,0 +1,35 @@
+{
+  "description": "Evaluator-authored query and relevance set based on the owner-supplied published-blog snapshot; not production search logs.",
+  "grades": {
+    "2": "directly relevant to the query intent",
+    "1": "partially relevant or exact metadata match without supporting story content",
+    "0": "not relevant; omitted from each query's relevant map"
+  },
+  "queries": [
+    {"id":"Q1","query":"experience of starting to learn an instrument","kind":"semantic no-hit","relevant":{}},
+    {"id":"Q2","query":"how do I publish my writing and choose topics","kind":"natural-language how-to","relevant":{"69d8160533606858259c1d99":2,"69d80db42baf4e8b69915b4d":1}},
+    {"id":"Q3","query":"welcome to Aether and explore stories from other writers","kind":"natural-language paraphrase","relevant":{"69d80db42baf4e8b69915b4d":2}},
+    {"id":"Q4","query":"find Sindhuja's welcome story","kind":"author plus meaning","relevant":{"69d80db42baf4e8b69915b4d":2}},
+    {"id":"Q5","query":"Software Engineering","kind":"exact topic","relevant":{"69d8160533606858259c1d99":2,"69d80db42baf4e8b69915b4d":2}},
+    {"id":"Q6","query":"Artificial Intelligence","kind":"exact topic","relevant":{"6ac77dbe14c28f706a8e501c":2,"6a0168ac8609a9e3c2b3bc22":1}},
+    {"id":"Q7","query":"Cooking","kind":"exact topic","relevant":{"6ac77f3206690bc17347406f":2,"6a0168ac8609a9e3c2b3bc22":1}},
+    {"id":"Q8","query":"random story about space exploration","kind":"no-hit","relevant":{}},
+    {"id":"Q9","query":"reducing disposable packaging in daily life","kind":"semantic paraphrase","relevant":{"6ac77f6e06690bc17347407c":2}},
+    {"id":"Q10","query":"career direction after discovering what work feels satisfying","kind":"semantic paraphrase","relevant":{"6ac77f5106690bc173474076":2}},
+    {"id":"Q11","query":"adjusting a pasta dish by tasting instead of blindly following recipe instructions","kind":"semantic paraphrase","relevant":{"6ac77f3206690bc17347406f":2}},
+    {"id":"Q12","query":"taking candid photos without needing technically flawless images","kind":"semantic paraphrase","relevant":{"6ac77f105b7e656d3ff24726":2}},
+    {"id":"Q13","query":"trace data and isolate the cause instead of randomly editing code","kind":"semantic paraphrase","relevant":{"6ac77eeb06690bc173474067":2}},
+    {"id":"Q14","query":"recognize when rest is needed before becoming completely exhausted","kind":"semantic paraphrase","relevant":{"6ac77eb55b7e656d3ff24707":2}},
+    {"id":"Q15","query":"understand spending patterns by recording small purchases","kind":"semantic paraphrase","relevant":{"6ac77e585b7e656d3ff246f6":2}},
+    {"id":"Q16","query":"an accidental detour made the trip more memorable than the itinerary","kind":"semantic paraphrase","relevant":{"6ac77e2614c28f706a8e507b":2}},
+    {"id":"Q17","query":"prioritize fewer meaningful tasks instead of checking boxes","kind":"semantic paraphrase","relevant":{"6ac77e0714c28f706a8e505a":2}},
+    {"id":"Q18","query":"using AI as a thinking partner that challenges assumptions","kind":"semantic paraphrase","relevant":{"6ac77dbe14c28f706a8e501c":2}},
+    {"id":"Q19","query":"Blockchain","kind":"exact topic with conflicting content","relevant":{"6a434c264c8982c65819a250":1}},
+    {"id":"Q20","query":"What I Learned After Tracking Every Rupee I Spent","kind":"exact title","relevant":{"6ac77e585b7e656d3ff246f6":2}},
+    {"id":"Q21","query":"nn career advice","kind":"author plus topic/intent","relevant":{"6ac77f5106690bc173474076":2}},
+    {"id":"Q22","query":"Photography","kind":"exact topic","relevant":{"6ac77f105b7e656d3ff24726":2}},
+    {"id":"Q23","query":"long time no see howdy","kind":"exact body phrase","relevant":{"6ac751016e3605468f7a69a6":2}},
+    {"id":"Q24","query":"show me the Aether welcome page","kind":"natural-language intent","relevant":{"69d80db42baf4e8b69915b4d":2}},
+    {"id":"Q25","query":"how to add a cover image and publish a blog","kind":"natural-language how-to","relevant":{"69d8160533606858259c1d99":2}}
+  ]
+}

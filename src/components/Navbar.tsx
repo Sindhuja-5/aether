@@ -70,7 +70,7 @@ export default function Navbar({ user: initialUser }: { user: any }) {
   return (
     <header className={`sticky top-0 z-[100] w-full transition-all duration-300 ${scrolled ? 'bg-background/80 backdrop-blur-xl py-3 border-b border-border shadow-sm' : 'bg-transparent py-5'
       }`}>
-      <div className="max-w-[1400px] mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4">
         {/* Brand Logo */}
         <button onClick={() => confirmNavigation('/')} className="flex items-center space-x-2 group shrink-0 border-none bg-transparent cursor-pointer">
           <img
@@ -78,22 +78,23 @@ export default function Navbar({ user: initialUser }: { user: any }) {
             alt="Aether"
             className="w-9 h-9 rounded-full object-cover"
           />
-          <span className="text-xl font-black text-foreground tracking-tighter pt-0.5">
+          <span className="hidden sm:inline text-xl font-black text-foreground tracking-tighter pt-0.5">
             Aether
           </span>
         </button>
 
         {/* Search */}
-        <div className="flex-1 max-w-xl px-12 hidden sm:block">
+        <div className="flex-1 min-w-0 max-w-xl px-0 sm:px-8 lg:px-12">
           <div className="relative group">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+            <Search size={16} className="absolute left-2.5 sm:left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <input
               type="text"
-              placeholder="Search ideas, topics, or authors..."
+              aria-label="Search stories, topics, or authors"
+              placeholder="Search stories..."
               value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
               onKeyDown={onKeyDown}
-              className="w-full bg-secondary/50 border border-border/50 h-11 pl-11 pr-4 rounded-xl font-bold text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all"
+              className="w-full min-w-0 bg-secondary/50 border border-border/50 h-10 sm:h-11 pl-8 sm:pl-11 pr-2 sm:pr-4 rounded-xl font-bold text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all"
             />
           </div>
         </div>

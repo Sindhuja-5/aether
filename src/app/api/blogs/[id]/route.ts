@@ -3,6 +3,9 @@ import dbConnect from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import User from '@/models/User';
 import { getAuthenticatedUser } from '@/lib/authHelper';
+import { refreshBlogEmbedding, removeBlogEmbedding } from '@/lib/semantic-search-service';
+
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,6 +33,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const body = await req.json();
     const updated = await Blog.findByIdAndUpdate(p.id, body, { new: true });
+    if (updated) {
+      try {
+        await refreshBlogEmbedding(updated);
+      } catch (error) {
+        // Never serve a stale vector when the story has changed.
+        await removeBlogEmbedding(String(updated._id)).catch(() => undefined);
+        console.error(`Could not refresh the semantic embedding for story ${String(updated._id)}.`, error);
+      }
+    }
     return NextResponse.json(updated);
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
@@ -49,6 +61,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 
     await Blog.findByIdAndDelete(p.id);
+    await removeBlogEmbedding(p.id).catch((error) => {
+      console.error(`Could not remove the semantic embedding for deleted story ${p.id}.`, error);
+    });
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Failed' }, { status: 500 });

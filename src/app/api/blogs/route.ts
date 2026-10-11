@@ -3,6 +3,9 @@ import dbConnect from '@/lib/mongodb';
 import Blog from '@/models/Blog';
 import User from '@/models/User';
 import { getAuthenticatedUser } from '@/lib/authHelper';
+import { getSemanticBlogResults, mergeSearchResults, refreshBlogEmbedding, removeBlogEmbedding } from '@/lib/semantic-search-service';
+
+export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
   try {
@@ -63,8 +66,34 @@ export async function GET(req: NextRequest) {
         { $sort: { score: -1 } }
       ];
 
-      const blogs = await Blog.aggregate(pipeline);
-      return NextResponse.json(blogs);
+      const lexicalBlogs = await Blog.aggregate(pipeline);
+      let semanticBlogs: Awaited<ReturnType<typeof getSemanticBlogResults>>['results'] = [];
+      let semanticDiagnostics: Awaited<ReturnType<typeof getSemanticBlogResults>>['diagnostics'] | undefined;
+      try {
+        const semanticSearch = await getSemanticBlogResults(query, status);
+        semanticBlogs = semanticSearch.results;
+        semanticDiagnostics = semanticSearch.diagnostics;
+        if (process.env.NODE_ENV !== 'production') {
+          console.info('[semantic-search:diagnostics]', JSON.stringify({
+            query,
+            status,
+            lexicalHitCount: lexicalBlogs.length,
+            ...semanticSearch.diagnostics,
+          }));
+        }
+      } catch (error) {
+        // Keep the current Atlas search available if model loading or inference fails.
+        console.error('Semantic search unavailable; returning Atlas results only.', error);
+      }
+      if (process.env.NODE_ENV !== 'production' && !semanticDiagnostics) {
+        console.info('[semantic-search:diagnostics]', JSON.stringify({
+          query,
+          status,
+          lexicalHitCount: lexicalBlogs.length,
+          semanticError: 'See server error log above.',
+        }));
+      }
+      return NextResponse.json(mergeSearchResults(lexicalBlogs, semanticBlogs));
     }
 
     // 2. Exclusive Interest-based Feed (For You)
@@ -105,6 +134,13 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const blog = await Blog.create({ ...body, authorId: user._id });
+
+    try {
+      await refreshBlogEmbedding(blog);
+    } catch (error) {
+      await removeBlogEmbedding(String(blog._id)).catch(() => undefined);
+      console.error(`Could not create a semantic embedding for story ${String(blog._id)}.`, error);
+    }
 
     return NextResponse.json(blog, { status: 201 });
   } catch (error) {
