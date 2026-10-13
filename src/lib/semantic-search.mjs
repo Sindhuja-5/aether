@@ -1,10 +1,29 @@
 import { createHash } from 'node:crypto';
-import { callModelService } from './model-service-client.mjs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { env, pipeline } from '@huggingface/transformers';
 
 export const MODEL_ID = 'onnx-community/all-MiniLM-L6-v2-ONNX';
 export const MODEL_REVISION = 'aff7a1dc4e8a1ea593e6ea21e95c22ef0a25966f';
 export const EMBEDDING_DIMENSIONS = 384;
 export const EMBEDDING_MODEL_VERSION = `${MODEL_ID}@${MODEL_REVISION}:q4:field-vectors-v3`;
+
+env.cacheDir = process.env.TRANSFORMERS_CACHE_DIR || path.join(tmpdir(), 'aether-transformers-cache');
+
+let extractorPromise;
+
+function getExtractor() {
+  if (!extractorPromise) {
+    extractorPromise = pipeline('feature-extraction', MODEL_ID, {
+      revision: MODEL_REVISION,
+      dtype: 'q4',
+    });
+    extractorPromise.catch(() => {
+      extractorPromise = undefined;
+    });
+  }
+  return extractorPromise;
+}
 
 export function tiptapToPlainText(value) {
   const parts = [];
@@ -86,15 +105,9 @@ export function hashEmbeddingText(text) {
 export async function embedTexts(texts) {
   const inputs = texts.map((text) => text.trim());
   if (inputs.length === 0 || inputs.some((text) => !text)) throw new Error('Cannot embed empty text.');
-  const vectors = [];
-  for (let index = 0; index < inputs.length; index += 256) {
-    const result = await callModelService('/v1/embed', { texts: inputs.slice(index, index + 256) });
-    if (result.modelVersion !== EMBEDDING_MODEL_VERSION) {
-      throw new Error(`Model service embedding version mismatch: expected ${EMBEDDING_MODEL_VERSION}.`);
-    }
-    if (!Array.isArray(result.vectors)) throw new Error('Model service returned an invalid embedding response.');
-    vectors.push(...result.vectors);
-  }
+  const extractor = await getExtractor();
+  const tensor = await extractor(inputs, { pooling: 'mean', normalize: true });
+  const vectors = tensor.tolist();
   if (!Array.isArray(vectors) || vectors.length !== inputs.length || vectors.some((vector) =>
     !Array.isArray(vector) || vector.length !== EMBEDDING_DIMENSIONS || vector.some((n) => !Number.isFinite(n))
   )) {
