@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/prune-vercel-function-binaries.mjs",
     "start": "next start",
     "lint": "next lint",
     "search:backfill": "node --env-file=.env.local scripts/backfill-blog-embeddings.mjs",
