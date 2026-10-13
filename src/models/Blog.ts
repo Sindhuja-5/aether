@@ -8,6 +8,12 @@ export interface IBlog {
   previewImage?: string;
   status: 'draft' | 'published';
   tags: string[];
+  moderation?: {
+    status: 'unreviewed' | 'flagged' | 'clear';
+    score?: number;
+    modelVersion?: string;
+    evaluatedAt?: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -28,6 +34,12 @@ const BlogSchema = new Schema<IBlog>(
           message: 'Story can have a maximum of 10 tags.'
         }
       ]
+    },
+    moderation: {
+      status: { type: String, enum: ['unreviewed', 'flagged', 'clear'], default: 'unreviewed' },
+      score: { type: Number, min: 0, max: 1 },
+      modelVersion: { type: String },
+      evaluatedAt: { type: Date },
     },
   },
   { timestamps: true }

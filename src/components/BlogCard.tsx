@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { AlertTriangle } from 'lucide-react';
 
 interface BlogCardProps {
   blog: any;
@@ -78,10 +79,18 @@ export default function BlogCard({ blog, onDelete, hideStatusBadge, hideAuthorAc
   };
 
   const destination = `/blog/${blog._id}`;
+  const isModerationFlagged = blog.moderation?.status === 'flagged';
 
   return (
     <Link href={destination} className="block group h-full">
       <div className="aether-card aether-card-hover p-4 sm:p-5 relative overflow-hidden flex flex-col h-full transition-all duration-500 bg-white group-hover:border-primary/20">
+        {isModerationFlagged && (
+          <div className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 mb-4 text-amber-900" role="status">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span className="text-xs font-bold leading-relaxed">Warning:This story may contain spam or inappropriate content. Review before opening.
+            </span>
+          </div>
+        )}
         {/* Header: Pure Author Info */}
         <div className="flex items-center space-x-4 min-w-0 mb-4 relative z-20">
           <Avatar className="h-8 w-8 border border-border/50 shrink-0 rounded-full">

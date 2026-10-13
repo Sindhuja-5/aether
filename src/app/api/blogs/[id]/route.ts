@@ -4,6 +4,7 @@ import Blog from '@/models/Blog';
 import User from '@/models/User';
 import { getAuthenticatedUser } from '@/lib/authHelper';
 import { refreshBlogEmbedding, removeBlogEmbedding } from '@/lib/semantic-search-service';
+import { classifyStory } from '@/lib/moderation/classifier.mjs';
 
 export const maxDuration = 60;
 
@@ -31,8 +32,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const body = await req.json();
-    const updated = await Blog.findByIdAndUpdate(p.id, body, { new: true });
+    const input = await req.json();
+    const changes: Record<string, unknown> = {};
+    for (const field of ['title', 'body', 'previewImage', 'status', 'tags']) {
+      if (Object.prototype.hasOwnProperty.call(input, field)) changes[field] = input[field];
+    }
+    const updatedTitle = typeof changes.title === 'string' ? changes.title : blog.title;
+    const updatedBody = Object.prototype.hasOwnProperty.call(changes, 'body') ? changes.body : blog.body;
+    const updated = await Blog.findByIdAndUpdate(
+      p.id,
+      { $set: { ...changes, moderation: await classifyStory(updatedTitle, updatedBody) } },
+      { new: true, runValidators: true }
+    );
     if (updated) {
       try {
         await refreshBlogEmbedding(updated);

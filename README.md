@@ -7,6 +7,7 @@
 - 📊 **Feed**: View all public stories, including a curated tab with an auto-filter based on interests selected in your profile settings.
 - 🔍 **Discovery**: Global search functionality and content filtering to discover stories across the community.
 - 🧠 **Semantic Search**: The search combines Atlas fuzzy text search with pretrained MiniLM meaning-based retrieval.
+- 🛡️ **Content Moderation**: Pretrained classifiers flag stories that may contain spam, scams, or toxic content and show readers a warning.
 - 🧡 **Favorites System**: Save your favorite stories to your personal library.
 - 🔐 **Authentication**: Secure login and profile management powered by **Auth0**.
 - 📁 **Cloud Storage**: Image management with **AWS S3** integration for reliable media delivery.
@@ -14,8 +15,6 @@
 - 📖 **Reader Preview**: High-fidelity reading experience for all published stories.
 
 
-| :--- | :--- |
-| **Next.js 16** | Core Framework & App Router |
 
 ## Semantic Search: Evaluation and Current Choice
 
@@ -51,6 +50,63 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 
 
 **Current ranking choice:** Field-max cosine and RRF merge with Atlas Search. Whole-story cosine won on this small offline metric set. Field-max cosine didn’t prove it ranks better than whole-story cosine but we’re treating it as a design choice to validate against real searches—not as a measured winner. MMR is not the default because Aether search is intended to return relevant matches, not maximize diversity.
+
+### Evaluation files
+
+- `[corpus-v2.json](docs/search/corpus-v2.json)`: snapshot of the existing stories used in the offline evaluation.
+- `[queries-v2.json](docs/search/queries-v2.json)`: 25 evaluator-written queries and their relevance grades.
+- `[experiments-v1.json](docs/search/experiments-v1.json)`: detailed embedding-model and ranking-method comparisons, including per-query rankings, aggregate metrics, timings, and memory estimates.
+- `[results-v2.json](docs/search/results-v2.json)`: a separate lexical-versus-semantic comparison for MiniLM, E5, and BGE on the same snapshot and query set.
+
+
+
+## Automated Content Moderation
+
+Stories are checked with **pretrained classifiers** to produce a review warning. The current choice combines the [Horizon Labs phishing and scam detector](https://huggingface.co/onnx-community/phishing-scam-detector-base-ONNX) with [Intel Toxic Prompt RoBERTa](https://huggingface.co/onnx-community/toxic-prompt-roberta-ONNX): it flags when the maximum of the fraud-plus-spam score and toxicity score reaches `0.5`.
+
+Candidates were evaluated on the same 20-story holdout.
+
+Pretrained classifiers are the moderation approach used by the app. I also trained TF-IDF classifiers out of curiosity to compare against the pretrained models; that experiment was only a baseline, not the implemented approach.
+
+
+| Candidate                                                                                                                            | Precision / Recall / F1 / Accuracy | Safe real stories flagged | Model size / time for 95 stories | Observation and decision                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- | ------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Tanaos multilingual spam detector](https://huggingface.co/onnx-community/tanaos-spam-detection-v1-ONNX), validation-selected cutoff | 1.00 / 0.11 / 0.20 / 0.60          | 1 / 15                    | 132 MiB / 4.1 s                  | High precision but missed most unsafe synthetic examples; not selected.                                                                                                                                         |
+| [Horizon phishing/scam detector](https://huggingface.co/onnx-community/phishing-scam-detector-base-ONNX), validation-selected cutoff | 0 / 0 / 0 / 0.55                   | 0 / 15                    | 327 MiB / 11.7 s                 | Conservative alone, but missed every unsafe holdout example at its selected cutoff; not selected alone.                                                                                                         |
+| [Intel Toxic Prompt RoBERTa](https://huggingface.co/onnx-community/toxic-prompt-roberta-ONNX), validation-selected cutoff            | 0.50 / 0.22 / 0.31 / 0.55          | 0 / 15                    | 123 MiB / 7.1 s                  | Adds a toxicity signal but performed poorly alone; retained as a complementary part of the pair.                                                                                                                |
+| **Horizon + Intel, serving cutoff 0.5**                                                                                              | **0.78 / 0.78 / 0.78 / 0.80**      | **1 / 15**                | **450 MiB / 18.8 s**             | **Selected:** combines scam/spam and toxicity signals. At the pair's validation-selected cutoff of 0.3, holdout F1 rose to 0.84, but it flagged 3/15 safe stories; 0.5 is the more conservative warning cutoff. |
+| Self-trained TF-IDF + Linear SVM (curiosity comparison)                                                                              | 0.75 / 0.67 / 0.71 / 0.75          | 6 / 15                    | 0.24 MB / 0.72 s fit and predict | Best of the self-trained Logistic Regression, Linear SVM, and Complement Naive Bayes baselines, but flagged 40% of the safe set. This was an additional comparison, not the initial approach.                   |
+
+
+The TF-IDF baselines used word unigrams/bigrams and character 3–5-grams (5,000 features). Logistic Regression scored F1 **0.46** and Complement Naive Bayes **0.27**.
+
+### Evaluation files
+
+- `[evaluation-corpus.csv](docs/content-moderation/evaluation-corpus.csv)`: 95 labeled stories.
+- `[pretrained-model-evaluation.json](docs/content-moderation/pretrained-model-evaluation.json)`: pretrained model and ensemble scores, thresholds, predictions, model sizes, and timing.
+- `[self-trained-baseline-evaluation.json](docs/content-moderation/self-trained-baseline-evaluation.json)`: TF-IDF classifier metrics, predictions, and the safe-story check.
+- `[evaluate-pretrained-models.mjs](docs/content-moderation/evaluate-pretrained-models.mjs)`: script to rerun pretrained evaluations.
+- `[evaluate-tfidf-baselines.mjs](docs/content-moderation/evaluate-tfidf-baselines.mjs)`: script to rerun the exploratory TF-IDF baselines.
+
+
+
+### Backfilling existing stories
+
+New and edited stories are classified automatically. Existing published stories need a one-time backfill; deployment to Vercel does not run it automatically. Set `MONGODB_URI` in `.env.local` to the database you intend to update, then run from the repository root:
+
+```bash
+npm run moderation:backfill
+```
+
+This is a dry run: it reports how many published stories would be flagged or cleared and does not write changes. After reviewing the counts, apply the results with:
+
+```bash
+npm run moderation:backfill -- --apply
+```
+
+The `--apply` flag writes moderation results to all published stories in the selected database. Run the dry run first, especially when targeting production.
+
+These results are exploratory. Gather reviewed examples and monitor false positives before treating the warning as reliable.
 
 ### 🛠️ Tech Stack
 
@@ -176,6 +232,23 @@ npm run search:backfill
 ```
 
 New and edited stories maintain their vectors automatically. Semantic-only results must have cosine similarity of at least **0.44**; Atlas Search supplies the lexical results and remains available if semantic inference fails.
+
+### 6. Backfill content moderation for existing stories
+
+New and edited stories are classified automatically. To classify stories that were already published, first ensure `MONGODB_URI` in `.env.local` points to the database you intend to update. Cache the pretrained models, then preview the backfill:
+
+```bash
+npm run moderation:cache
+npm run moderation:backfill
+```
+
+The backfill command is a dry run by default. Review its flagged and clear counts, then save those results to the database with:
+
+```bash
+npm run moderation:backfill -- --apply
+```
+
+This applies to all published stories in the configured database. Use `--apply` only when you intend to write to that database.
 
 ## 🚢 Deployment
 

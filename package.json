@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "search:backfill": "node --env-file=.env.local scripts/backfill-blog-embeddings.mjs"
+    "search:backfill": "node --env-file=.env.local scripts/backfill-blog-embeddings.mjs",
+    "moderation:backfill": "node --env-file=.env.local scripts/backfill-moderation.mjs",
+    "moderation:cache": "node scripts/cache-moderation-models.mjs"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.16.1",

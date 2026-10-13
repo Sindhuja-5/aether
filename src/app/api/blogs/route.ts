@@ -4,6 +4,7 @@ import Blog from '@/models/Blog';
 import User from '@/models/User';
 import { getAuthenticatedUser } from '@/lib/authHelper';
 import { getSemanticBlogResults, mergeSearchResults, refreshBlogEmbedding, removeBlogEmbedding } from '@/lib/semantic-search-service';
+import { classifyStory } from '@/lib/moderation/classifier.mjs';
 
 export const maxDuration = 60;
 
@@ -132,8 +133,16 @@ export async function POST(req: NextRequest) {
     const user = await getAuthenticatedUser(req);
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const body = await req.json();
-    const blog = await Blog.create({ ...body, authorId: user._id });
+    const input = await req.json();
+    const blog = await Blog.create({
+      title: input.title,
+      body: input.body,
+      previewImage: input.previewImage,
+      status: input.status,
+      tags: input.tags,
+      authorId: user._id,
+      moderation: await classifyStory(input.title, input.body),
+    });
 
     try {
       await refreshBlogEmbedding(blog);
