@@ -24,6 +24,27 @@ const nextConfig: NextConfig = {
     '/api/blogs': transformerRuntimeFiles,
     '/api/blogs/*': transformerRuntimeFiles,
   },
+  outputFileTracingExcludes: {
+    // ONNX Runtime's npm package contains native binaries for several
+    // operating systems and architectures. Vercel runs these functions on
+    // Linux x64, so tracing the other binaries only inflates the bundle.
+    '/api/blogs': [
+      './node_modules/onnxruntime-node/bin/napi-v6/darwin/**/*',
+      './node_modules/onnxruntime-node/bin/napi-v6/win32/**/*',
+      './node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**/*',
+      './node_modules/@huggingface/transformers/node_modules/onnxruntime-node/bin/napi-v6/darwin/**/*',
+      './node_modules/@huggingface/transformers/node_modules/onnxruntime-node/bin/napi-v6/win32/**/*',
+      './node_modules/@huggingface/transformers/node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**/*',
+    ],
+    '/api/blogs/*': [
+      './node_modules/onnxruntime-node/bin/napi-v6/darwin/**/*',
+      './node_modules/onnxruntime-node/bin/napi-v6/win32/**/*',
+      './node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**/*',
+      './node_modules/@huggingface/transformers/node_modules/onnxruntime-node/bin/napi-v6/darwin/**/*',
+      './node_modules/@huggingface/transformers/node_modules/onnxruntime-node/bin/napi-v6/win32/**/*',
+      './node_modules/@huggingface/transformers/node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**/*',
+    ],
+  },
 };
 
 export default nextConfig;
