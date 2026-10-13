@@ -56,7 +56,6 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 - `[corpus-v2.json](docs/search/corpus-v2.json)`: snapshot of the existing stories used in the offline evaluation.
 - `[queries-v2.json](docs/search/queries-v2.json)`: 25 evaluator-written queries and their relevance grades.
 - `[experiments-v1.json](docs/search/experiments-v1.json)`: detailed embedding-model and ranking-method comparisons, including per-query rankings, aggregate metrics, timings, and memory estimates.
-- `[results-v2.json](docs/search/results-v2.json)`: a separate lexical-versus-semantic comparison for MiniLM, E5, and BGE on the same snapshot and query set.
 
 
 
@@ -64,60 +63,43 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 
 Stories are checked with **pretrained classifiers** to produce a review warning. The current choice combines the [Horizon Labs phishing and scam detector](https://huggingface.co/onnx-community/phishing-scam-detector-base-ONNX) with [Intel Toxic Prompt RoBERTa](https://huggingface.co/onnx-community/toxic-prompt-roberta-ONNX): it flags when the maximum of the fraud-plus-spam score and toxicity score reaches `0.5`.
 
-Candidates were evaluated on the same 20-story holdout.
+The evaluation corpus contains 95 stories: 80 labeled examples used for the model experiments and 15 stories labeled safe, checked separately for false positives. For the 80 labeled examples, each candidate used the same 60-story training split and 20-story test split; a separate 15-story validation split was used to choose thresholds. The test-set results below are exploratory because the labeled set is small.
 
 Pretrained classifiers are the moderation approach used by the app. I also trained TF-IDF classifiers out of curiosity to compare against the pretrained models; that experiment was only a baseline, not the implemented approach.
 
 
-| Candidate                                                                                                                            | Precision / Recall / F1 / Accuracy | Safe real stories flagged | Model size / time for 95 stories | Observation and decision                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- | ------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Tanaos multilingual spam detector](https://huggingface.co/onnx-community/tanaos-spam-detection-v1-ONNX), validation-selected cutoff | 1.00 / 0.11 / 0.20 / 0.60          | 1 / 15                    | 132 MiB / 4.1 s                  | High precision but missed most unsafe synthetic examples; not selected.                                                                                                                                         |
-| [Horizon phishing/scam detector](https://huggingface.co/onnx-community/phishing-scam-detector-base-ONNX), validation-selected cutoff | 0 / 0 / 0 / 0.55                   | 0 / 15                    | 327 MiB / 11.7 s                 | Conservative alone, but missed every unsafe holdout example at its selected cutoff; not selected alone.                                                                                                         |
-| [Intel Toxic Prompt RoBERTa](https://huggingface.co/onnx-community/toxic-prompt-roberta-ONNX), validation-selected cutoff            | 0.50 / 0.22 / 0.31 / 0.55          | 0 / 15                    | 123 MiB / 7.1 s                  | Adds a toxicity signal but performed poorly alone; retained as a complementary part of the pair.                                                                                                                |
-| **Horizon + Intel, serving cutoff 0.5**                                                                                              | **0.78 / 0.78 / 0.78 / 0.80**      | **1 / 15**                | **450 MiB / 18.8 s**             | **Selected:** combines scam/spam and toxicity signals. At the pair's validation-selected cutoff of 0.3, holdout F1 rose to 0.84, but it flagged 3/15 safe stories; 0.5 is the more conservative warning cutoff. |
-| Self-trained TF-IDF + Linear SVM (curiosity comparison)                                                                              | 0.75 / 0.67 / 0.71 / 0.75          | 6 / 15                    | 0.24 MB / 0.72 s fit and predict | Best of the self-trained Logistic Regression, Linear SVM, and Complement Naive Bayes baselines, but flagged 40% of the safe set. This was an additional comparison, not the initial approach.                   |
+| Candidate                                                                                                                            | Precision / Recall / F1 / Accuracy | Stories marked safe flagged | Model size / time for 95 stories | Observation and decision                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- | --------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Tanaos multilingual spam detector](https://huggingface.co/onnx-community/tanaos-spam-detection-v1-ONNX), validation-selected cutoff | 1.00 / 0.11 / 0.20 / 0.60          | 1 / 15                      | 132 MiB / 4.1 s                  | High precision but missed most unsafe test examples; not selected.                                                                                                                                               |
+| [Horizon phishing/scam detector](https://huggingface.co/onnx-community/phishing-scam-detector-base-ONNX), validation-selected cutoff | 0 / 0 / 0 / 0.55                   | 0 / 15                      | 327 MiB / 11.7 s                 | Conservative alone, but missed every unsafe test example at its selected cutoff; not selected alone.                                                                                                             |
+| [Intel Toxic Prompt RoBERTa](https://huggingface.co/onnx-community/toxic-prompt-roberta-ONNX), validation-selected cutoff            | 0.50 / 0.22 / 0.31 / 0.55          | 0 / 15                      | 123 MiB / 7.1 s                  | Adds a toxicity signal but performed poorly alone; retained as a complementary part of the pair.                                                                                                                 |
+| **Horizon + Intel, serving cutoff 0.5**                                                                                              | **0.78 / 0.78 / 0.78 / 0.80**      | **1 / 15**                  | **450 MiB / 18.8 s**             | **Selected:** combines scam/spam and toxicity signals. At the pair's validation-selected cutoff of 0.3, test-set F1 rose to 0.84, but it flagged 3/15 safe stories; 0.5 is the more conservative warning cutoff. |
+| Self-trained TF-IDF + Linear SVM (curiosity comparison)                                                                              | 0.75 / 0.67 / 0.71 / 0.75          | 6 / 15                      | 0.24 MB / 0.72 s fit and predict | Best of the self-trained Logistic Regression, Linear SVM, and Complement Naive Bayes baselines, but flagged 40% of the safe set. This was an additional comparison, not the initial approach.                    |
 
 
-The TF-IDF baselines used word unigrams/bigrams and character 3–5-grams (5,000 features). Logistic Regression scored F1 **0.46** and Complement Naive Bayes **0.27**.
+For the self-trained comparison, all three TF-IDF classifiers used the same 5,000 word and character n-gram features and the same data splits. On the 20-story test set, Linear SVM achieved F1 **0.71**, compared with **0.46** for Logistic Regression and **0.27** for Complement Naive Bayes. These are exploratory results from models trained on this small dataset, not production-accuracy estimates.
 
 ### Evaluation files
 
-- `[evaluation-corpus.csv](docs/content-moderation/evaluation-corpus.csv)`: 95 labeled stories.
-- `[pretrained-model-evaluation.json](docs/content-moderation/pretrained-model-evaluation.json)`: pretrained model and ensemble scores, thresholds, predictions, model sizes, and timing.
-- `[self-trained-baseline-evaluation.json](docs/content-moderation/self-trained-baseline-evaluation.json)`: TF-IDF classifier metrics, predictions, and the safe-story check.
-- `[evaluate-pretrained-models.mjs](docs/content-moderation/evaluate-pretrained-models.mjs)`: script to rerun pretrained evaluations.
-- `[evaluate-tfidf-baselines.mjs](docs/content-moderation/evaluate-tfidf-baselines.mjs)`: script to rerun the exploratory TF-IDF baselines.
+- [evaluation-corpus.csv](docs/content-moderation/evaluation-corpus.csv): the 95-story labeled evaluation corpus.
+- [pretrained-model-evaluation.json](docs/content-moderation/pretrained-model-evaluation.json): pretrained model and ensemble scores, thresholds, predictions, model sizes, and timing.
+- [self-trained-baseline-evaluation.json](docs/content-moderation/self-trained-baseline-evaluation.json): TF-IDF classifier metrics, predictions, and the safe-story check.
+- [evaluate-pretrained-models.mjs](docs/content-moderation/evaluate-pretrained-models.mjs): script to rerun pretrained evaluations.
+- [evaluate-tfidf-baselines.mjs](docs/content-moderation/evaluate-tfidf-baselines.mjs): script to rerun the exploratory TF-IDF baselines.
 
-
-
-### Backfilling existing stories
-
-New and edited stories are classified automatically. Existing published stories need a one-time backfill; deployment to Vercel does not run it automatically. Set `MONGODB_URI` in `.env.local` to the database you intend to update, then run from the repository root:
-
-```bash
-npm run moderation:backfill
-```
-
-This is a dry run: it reports how many published stories would be flagged or cleared and does not write changes. After reviewing the counts, apply the results with:
-
-```bash
-npm run moderation:backfill -- --apply
-```
-
-The `--apply` flag writes moderation results to all published stories in the selected database. Run the dry run first, especially when targeting production.
-
-These results are exploratory. Gather reviewed examples and monitor false positives before treating the warning as reliable.
+Results are exploratory: gather reviewed examples and monitor false positives before treating the warning as reliable. Existing published stories need a one-time backfill; Vercel deployment does not run it automatically. See [Getting Started, step 6](#6-backfill-content-moderation-for-existing-stories) for the dry-run and `--apply` instructions.
 
 ### 🛠️ Tech Stack
 
 
-| Technology             | Purpose                     |
-| ---------------------- | --------------------------- |
-| **Next.js 16**         | Core Framework & App Router |
-| **Tailwind CSS 4**     | Minimalist Styling          |
-| **MongoDB / Mongoose** | NoSQL Database              |
-| **Auth0**              | Identity Management         |
-| **AWS S3**             | Cloud Object Storage        |
+| Technology                       | Purpose                                                     |
+| -------------------------------- | ----------------------------------------------------------- |
+| **Next.js 16**                   | Core Framework & App Router                                 |
+| **Hugging Face Transformers.js** | Run pretrained MiniLM embeddings and moderation classifiers |
+| **Tailwind CSS 4**               | Minimalist Styling                                          |
+| **MongoDB / Mongoose**           | NoSQL Database                                              |
+| **Auth0**                        | Identity Management                                         |
+| **AWS S3**                       | Cloud Object Storage                                        |
 
 
 
