@@ -1,0 +1,176 @@
+{
+  "date": "2026-10-17T08:33:41.730Z",
+  "seed": 1729,
+  "library": {
+    "@huggingface/transformers": "4.3.1",
+    "python": "3.11.0",
+    "scikit-learn": "1.3.0",
+    "scipy": "1.11.1",
+    "numpy": "1.26.4"
+  },
+  "models": [
+    {
+      "key": "tanaos",
+      "id": "onnx-community/tanaos-spam-detection-v1-ONNX",
+      "revision": "dac7281d03723c7024de552ddec6eac0b4d6fabf",
+      "dtype": "q8",
+      "loadMs": 36523.5689,
+      "inferenceMs": 6898.712700000004,
+      "rowsScored": 245,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "key": "horizon",
+      "id": "onnx-community/phishing-scam-detector-base-ONNX",
+      "revision": "56c77405dd5ff83f16e895a9b6e65ea4903be0a0",
+      "dtype": "q8",
+      "loadMs": 89075.3081,
+      "inferenceMs": 18968.768900000025,
+      "rowsScored": 245,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "key": "intel",
+      "id": "onnx-community/toxic-prompt-roberta-ONNX",
+      "revision": "b12e7b399747c86a5da5f3493bc1b8a7522654b1",
+      "dtype": "q8",
+      "loadMs": 33628.491500000004,
+      "inferenceMs": 12161.967700000008,
+      "rowsScored": 245,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "scoreSummaries": {
+    "tanaos": {
+      "distinct": 245,
+      "histogram10": [
+        195,
+        0,
+        2,
+        0,
+        1,
+        1,
+        1,
+        1,
+        3,
+        41
+      ],
+      "bimodal": true,
+      "criterion": "two nonadjacent local maxima each at least 15% of the largest bin, separated by a valley at or below half the smaller peak",
+      "min": 0.0002218849112978205,
+      "median": 0.0007882125792093575,
+      "max": 0.9993821382522583
+    },
+    "horizon": {
+      "distinct": 245,
+      "histogram10": [
+        72,
+        40,
+        20,
+        12,
+        15,
+        12,
+        14,
+        9,
+        16,
+        35
+      ],
+      "bimodal": true,
+      "criterion": "two nonadjacent local maxima each at least 15% of the largest bin, separated by a valley at or below half the smaller peak",
+      "min": 0.003074315027333796,
+      "median": 0.24207138642668724,
+      "max": 0.9986143037676811
+    },
+    "intel": {
+      "distinct": 245,
+      "histogram10": [
+        217,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        2,
+        23
+      ],
+      "bimodal": false,
+      "criterion": "two nonadjacent local maxima each at least 15% of the largest bin, separated by a valley at or below half the smaller peak",
+      "min": 0.00014729672693647444,
+      "median": 0.0004806497599929571,
+      "max": 0.9903938174247742
+    },
+    "horizon_intel": {
+      "distinct": 245,
+      "histogram10": [
+        66,
+        37,
+        15,
+        10,
+        13,
+        10,
+        13,
+        9,
+        16,
+        56
+      ],
+      "bimodal": true,
+      "criterion": "two nonadjacent local maxima each at least 15% of the largest bin, separated by a valley at or below half the smaller peak",
+      "min": 0.003074315027333796,
+      "median": 0.3202137015759945,
+      "max": 0.9986143037676811
+    },
+    "tanaos_intel": {
+      "distinct": 245,
+      "histogram10": [
+        169,
+        0,
+        3,
+        0,
+        2,
+        1,
+        1,
+        2,
+        5,
+        62
+      ],
+      "bimodal": true,
+      "criterion": "two nonadjacent local maxima each at least 15% of the largest bin, separated by a valley at or below half the smaller peak",
+      "min": 0.00022425391944125295,
+      "median": 0.002759241033345461,
+      "max": 0.9993821382522583
+    },
+    "tanaos_horizon_intel": {
+      "distinct": 245,
+      "histogram10": [
+        66,
+        37,
+        15,
+        10,
+        12,
+        7,
+        12,
+        7,
+        10,
+        69
+      ],
+      "bimodal": true,
+      "criterion": "two nonadjacent local maxima each at least 15% of the largest bin, separated by a valley at or below half the smaller peak",
+      "min": 0.003074315027333796,
+      "median": 0.3202137015759945,
+      "max": 0.9993821382522583
+    }
+  },
+  "inputFormat": "title + newline + story_text",
+  "truncation": {
+    "enabled": true,
+    "maxTokens": 512
+  },
+  "output": "scores-pretrained.csv",
+  "randomSeed": 1729,
+  "node": "v24.14.0"
+}

@@ -16,11 +16,11 @@
 
 
 
-## Semantic Search: Evaluation and Current Choice
+### Semantic Search: Evaluation and Current Choice
 
 The current choice is **MiniLM embeddings with the existing field-max cosine scorer and reciprocal-rank fusion (RRF) with Atlas Search**. The model and ranking alternatives below were evaluated offline on a snapshot of 15 stories and 25 evaluator-written queries. These are useful for comparing options, but they are not production search logs or a large relevance benchmark. Full per-query scores, timings, and memory estimates are in [experiments-v1.json](docs/search/experiments-v1.json), using the saved [corpus](docs/search/corpus-v2.json) and [queries and relevance labels](docs/search/queries-v2.json).
 
-### Embedding models
+#### Embedding models
 
 Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the semantic score cutoff. Timing and memory were measured with cached FP32 models on CPU; production uses a quantized ONNX MiniLM model, so these figures compare model sizes and relative cost rather than production latency. The currently applied `0.44` cutoff is evaluated separately below.
 
@@ -34,7 +34,7 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 
 **Why keep MiniLM:** MPNet's small MRR/nDCG gain with the current scorer is not enough evidence to justify its higher latency and storage on a 25-query test. MiniLM has the strongest whole-story cosine result.
 
-### Ranking methods
+#### Ranking methods
 
 
 | Method                                                  | Recall@3 / MRR@3 / nDCG@3 | Pros and cons                                                                                                                                                                                      |
@@ -51,7 +51,7 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 
 **Current ranking choice:** Field-max cosine and RRF merge with Atlas Search. Whole-story cosine won on this small offline metric set. Field-max cosine didn’t prove it ranks better than whole-story cosine but we’re treating it as a design choice to validate against real searches—not as a measured winner. MMR is not the default because Aether search is intended to return relevant matches, not maximize diversity.
 
-### Evaluation files
+#### Evaluation files
 
 - `[corpus-v2.json](docs/search/corpus-v2.json)`: snapshot of the existing stories used in the offline evaluation.
 - `[queries-v2.json](docs/search/queries-v2.json)`: 25 evaluator-written queries and their relevance grades.
@@ -59,37 +59,55 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 
 
 
-## Automated Content Moderation
+### Automated Content Moderation
 
-Stories are checked with **pretrained classifiers** to produce a review warning. The current choice combines the [Horizon Labs phishing and scam detector](https://huggingface.co/onnx-community/phishing-scam-detector-base-ONNX) with [Intel Toxic Prompt RoBERTa](https://huggingface.co/onnx-community/toxic-prompt-roberta-ONNX): it flags when the maximum of the fraud-plus-spam score and toxicity score reaches `0.5`.
+**Deployed moderator: Horizon + Intel at a fixed 0.5 threshold.** Stories are scored by two pretrained classifiers. A flagged story gets a warning for readers to review before opening; they can go back or continue, and the classifier does not remove content. The score is max(P(fraud) + P(spam), P(toxic)), using the [Horizon Labs phishing and scam detector](https://huggingface.co/onnx-community/phishing-scam-detector-base-ONNX) and [Intel Toxic Prompt RoBERTa](https://huggingface.co/onnx-community/toxic-prompt-roberta-ONNX).
 
-The evaluation corpus contains 95 stories: 80 labeled examples used for the model experiments and 15 stories labeled safe, checked separately for false positives. For the 80 labeled examples, each candidate used the same 60-story training split and 20-story test split; a separate 15-story validation split was used to choose thresholds. The test-set results below are exploratory because the labeled set is small.
-
-Pretrained classifiers are the moderation approach used by the app. I also trained TF-IDF classifiers out of curiosity to compare against the pretrained models; that experiment was only a baseline, not the implemented approach.
+The evaluation covers 245 stories out of which 112 are flagged as inappropriate and 133 as safe (corpus flagged share = 45.7%.). Pretrained models were evaluated on every story at fixed 0.5.
 
 
-| Candidate                                                                                                                            | Precision / Recall / F1 / Accuracy | Stories marked safe flagged | Model size / time for 95 stories | Observation and decision                                                                                                                                                                                         |
-| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- | --------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Tanaos multilingual spam detector](https://huggingface.co/onnx-community/tanaos-spam-detection-v1-ONNX), validation-selected cutoff | 1.00 / 0.11 / 0.20 / 0.60          | 1 / 15                      | 132 MiB / 4.1 s                  | High precision but missed most unsafe test examples; not selected.                                                                                                                                               |
-| [Horizon phishing/scam detector](https://huggingface.co/onnx-community/phishing-scam-detector-base-ONNX), validation-selected cutoff | 0 / 0 / 0 / 0.55                   | 0 / 15                      | 327 MiB / 11.7 s                 | Conservative alone, but missed every unsafe test example at its selected cutoff; not selected alone.                                                                                                             |
-| [Intel Toxic Prompt RoBERTa](https://huggingface.co/onnx-community/toxic-prompt-roberta-ONNX), validation-selected cutoff            | 0.50 / 0.22 / 0.31 / 0.55          | 0 / 15                      | 123 MiB / 7.1 s                  | Adds a toxicity signal but performed poorly alone; retained as a complementary part of the pair.                                                                                                                 |
-| **Horizon + Intel, serving cutoff 0.5**                                                                                              | **0.78 / 0.78 / 0.78 / 0.80**      | **1 / 15**                  | **450 MiB / 18.8 s**             | **Selected:** combines scam/spam and toxicity signals. At the pair's validation-selected cutoff of 0.3, test-set F1 rose to 0.84, but it flagged 3/15 safe stories; 0.5 is the more conservative warning cutoff. |
-| Self-trained TF-IDF + Linear SVM (curiosity comparison)                                                                              | 0.75 / 0.67 / 0.71 / 0.75          | 6 / 15                      | 0.24 MB / 0.72 s fit and predict | Best of the self-trained Logistic Regression, Linear SVM, and Complement Naive Bayes baselines, but flagged 40% of the safe set. This was an additional comparison, not the initial approach.                    |
+| System                         | TP/FP/FN/TN      | Precision (%) | Recall (%) | False-positive rate (%) | F1 (%) [95% CI]       |
+| ------------------------------ | ---------------- | ------------- | ---------- | ----------------------- | --------------------- |
+| Horizon                        | 78/8/34/125      | 90.7          | 69.6       | 6.0                     | 78.8 [72.0, 84.4]     |
+| Intel                          | 20/6/92/127      | 76.9          | 17.9       | 4.5                     | 29.0 [19.0, 38.9]     |
+| **Horizon + Intel (deployed)** | **91/13/21/120** | **87.5**      | **81.3**   | **9.8**                 | **84.3 [78.7, 89.1]** |
+| TF-IDF Linear SVM (baseline)   | 83/11/29/122     | 88.3          | 74.1       | 8.3                     | 80.6 [74.6, 85.7]     |
 
 
-For the self-trained comparison, all three TF-IDF classifiers used the same 5,000 word and character n-gram features and the same data splits. On the 20-story test set, Linear SVM achieved F1 **0.71**, compared with **0.46** for Logistic Regression and **0.27** for Complement Naive Bayes. These are exploratory results from models trained on this small dataset, not production-accuracy estimates.
 
-### Evaluation files
 
-- [evaluation-corpus.csv](docs/content-moderation/evaluation-corpus.csv): the 95-story labeled evaluation corpus.
-- [pretrained-model-evaluation.json](docs/content-moderation/pretrained-model-evaluation.json): pretrained model and ensemble scores, thresholds, predictions, model sizes, and timing.
-- [self-trained-baseline-evaluation.json](docs/content-moderation/self-trained-baseline-evaluation.json): TF-IDF classifier metrics, predictions, and the safe-story check.
-- [evaluate-pretrained-models.mjs](docs/content-moderation/evaluate-pretrained-models.mjs): script to rerun pretrained evaluations.
-- [evaluate-tfidf-baselines.mjs](docs/content-moderation/evaluate-tfidf-baselines.mjs): script to rerun the exploratory TF-IDF baselines.
+#### Why Horizon + Intel
 
-Results are exploratory: gather reviewed examples and monitor false positives before treating the warning as reliable. Existing published stories need a one-time backfill; Vercel deployment does not run it automatically. See [Getting Started, step 6](#6-backfill-content-moderation-for-existing-stories) for the dry-run and `--apply` instructions.
+**Why the pair:** I made a product decision that the moderator should prioritise catching spam, scam and abusive content, even if some harmless stories are flagged too. A missed harmful story is the worse outcome here, because a flag only shows a warning: no story is deleted or hidden, and readers can choose to open it anyway. Adding Intel to Horizon caught 13 more flagged stories (91 vs 78 of 112) and raised 5 more false alarms (13 vs 8 of 133). The paired test does not show a statistically supported advantage over Horizon alone (p = 0.096), so this is a deliberate trade-off, not a measured winner.
 
-### 🛠️ Tech Stack
+
+| Measure                            | Horizon alone | Horizon + Intel (deployed) | Difference   |
+| ---------------------------------- | ------------- | -------------------------- | ------------ |
+| Flagged stories caught (of 112)    | 78            | 91                         | +13          |
+| Flagged stories missed             | 34            | 21                         | -13          |
+| False alarms (of 133 not-flagged)  | 8             | 13                         | +5           |
+| Precision (%)                      | 90.7          | 87.5                       | -3.2 points  |
+| Recall (%)                         | 69.6          | 81.3                       | +11.7 points |
+| False-positive rate (%)            | 6.0           | 9.8                        | +3.8 points  |
+| ROC-AUC                            | 0.891         | 0.908                      | +0.017       |
+| Scoring time for 245 stories (sec) | 19.0          | 31.1                       | +12.2        |
+
+
+
+
+**Exploratory TF-IDF baselines (not used by the app):** To see how models without pretrained weights behave when learning from this dataset, I evaluated three TF-IDF classifiers: Logistic Regression, Linear SVM, and Complement Naive Bayes. Each learned from the training stories in a cross-validation fold and was evaluated on that fold’s held-out stories. 
+
+
+| TF-IDF baseline        | TP  | FP  | Precision | F1    |
+| ---------------------- | --- | --- | --------- | ----- |
+| Logistic Regression    | 78  | 9   | 89.7%     | 78.4% |
+| Linear SVM             | 83  | 11  | 88.3%     | 80.6% |
+| Complement Naive Bayes | 80  | 11  | 87.9%     | 78.8% |
+
+
+
+
+## 🛠️ Tech Stack
 
 
 | Technology                       | Purpose                                                     |
