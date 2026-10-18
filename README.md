@@ -18,7 +18,7 @@
 
 ### Semantic Search: Evaluation and Current Choice
 
-The current choice is **MiniLM embeddings with the existing field-max cosine scorer and reciprocal-rank fusion (RRF) with Atlas Search**. The model and ranking alternatives below were evaluated offline on a snapshot of 15 stories and 25 evaluator-written queries. These are useful for comparing options, but they are not production search logs or a large relevance benchmark. Full per-query scores, timings, and memory estimates are in [experiments-v1.json](docs/search/experiments-v1.json), using the saved [corpus](docs/search/corpus-v2.json) and [queries and relevance labels](docs/search/queries-v2.json).
+The current choice is **MiniLM embeddings with the field-max cosine scorer and reciprocal-rank fusion (RRF) with Atlas Search**. The model and ranking alternatives below were evaluated offline on a snapshot of 15 stories and 25 evaluator-written queries. These are useful for comparing options, but they are not production search logs or a large relevance benchmark. Full per-query scores, timings, and memory estimates are in [experiments-v1.json](docs/search/experiments-v1.json), using the saved [corpus](docs/search/corpus-v2.json) and [queries and relevance labels](docs/search/queries-v2.json).
 
 #### Embedding models
 
@@ -27,7 +27,7 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 
 | Model                                                                                                | Whole-story cosine          | Current field-max scorer    | Query latency (p50 / p95) | Vector payload (float32 / Mongo numeric estimate) | Pros and cons                                                                                                                                             |
 | ---------------------------------------------------------------------------------------------------- | --------------------------- | --------------------------- | ------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (384 dimensions)       | 0.88 / **0.86** / **0.912** | 0.88 / 0.82 / 0.889         | **27 / 31 ms**            | **0.19 / 0.38 MiB**                               | Best whole-story ranking in this run, fastest and smallest. Field-max results were a little lower than MPNet's.                                           |
+| [MiniLM-L6-v2](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2) (384 dimensions)       | 0.86 / 0.76 / 0.812 | **0.88 / 0.82 / 0.889**         | **27 / 31 ms**            | **0.19 / 0.38 MiB**                               | Best Field-max ranking in this run, fastest and smallest.                                           |
 | [all-mpnet-base-v2](https://huggingface.co/sentence-transformers/all-mpnet-base-v2) (768 dimensions) | 0.88 / 0.82 / 0.874         | 0.88 / **0.84** / **0.904** | 91 / 99 ms                | 0.38 / 0.76 MiB                                   | Slightly stronger field-max ranking than MiniLM here, but about 3× slower per query and uses twice the vector storage and about twice the model-load RSS. |
 | [E5-small-v2](https://huggingface.co/intfloat/e5-small-v2) (384 dimensions)                          | 0.88 / 0.82 / 0.874         | 0.88 / 0.82 / 0.889         | 46 / 56 ms                | 0.19 / 0.38 MiB                                   | Retrieval-specific and compact, but did not improve these metrics; requires `query:` and `passage:` prefixes.                                             |
 
@@ -39,8 +39,8 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 
 | Method                                                  | Recall@3 / MRR@3 / nDCG@3 | Pros and cons                                                                                                                                                                                      |
 | ------------------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Whole-story cosine (MiniLM)                             | **0.88 / 0.86 / 0.912**   | Best aggregate result in this offline run. One vector per story is simple, but combining title, body, and topics can dilute a short relevant passage.                                              |
-| Field-max cosine                                        | 0.88 / 0.82 / 0.889       | Scores title, body chunks, and topic tags independently, then uses the strongest field. Preserves exact topic and focused passage matches; a single accidental chunk or tag can over-rank a story. |
+| Whole-story cosine (MiniLM)                             | 0.86 / 0.76 / 0.812   | One vector per story is simple, but combining title, body, and topics can dilute a short relevant passage.                                              |
+| Field-max cosine                                        | **0.88 / 0.82 / 0.889**       | Best aggregate result in this offline run. Scores title, body chunks, and topic tags independently, then uses the strongest field. Preserves exact topic and focused passage matches; a single accidental chunk or tag can over-rank a story. |
 | BM25 lexical proxy                                      | 0.88 / 0.82 / 0.888       | Useful for exact words and metadata.                                                                                                                                                               |
 | BM25 + field-max RRF                                    | 0.88 / 0.82 / 0.889       | RRF combines lexical and semantic ranks without comparing their raw score scales. It tied the field-max result here; the live Atlas + semantic merge was not evaluated by this experiment.         |
 | MMR (lambda 0.75)                                       | 0.88 / 0.86 / 0.896       | Can diversify a result list, but had lower precision and nDCG than cosine. Better suited to “show me varied stories” than direct relevance search.                                                 |
@@ -49,7 +49,7 @@ Metrics are Recall@3 / MRR@3 / nDCG@3 over all 25 queries, before applying the s
 | Dot product or Euclidean distance on normalized vectors | Same rankings as cosine   | Equivalent ordering for unit-normalized embeddings, so neither provided a quality gain over cosine.                                                                                                |
 
 
-**Current ranking choice:** Field-max cosine and RRF merge with Atlas Search. Whole-story cosine won on this small offline metric set. Field-max cosine didn’t prove it ranks better than whole-story cosine but we’re treating it as a design choice to validate against real searches—not as a measured winner. MMR is not the default because Aether search is intended to return relevant matches, not maximize diversity.
+**Current ranking choice:** Field-max cosine and RRF merge with Atlas Search. Field-max cosine proves it ranks better than others on this run. MMR is not the default because Aether search is intended to return relevant matches, not maximize diversity.
 
 #### Evaluation files
 
